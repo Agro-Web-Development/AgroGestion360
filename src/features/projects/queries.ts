@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { getPlots } from "@/features/farms/queries"
 import { getOrgContext } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
+import type { ProjectStatus } from "./status"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -97,6 +98,31 @@ export async function getAssignablePlots(projectId: string) {
     .sort((a, b) => a.farm.localeCompare(b.farm, "es") || a.name.localeCompare(b.name, "es"))
 }
 
+/**
+ * Proyectos vigentes con sus parcelas asignadas, para imputar costos, cosechas
+ * y ventas. `statuses` limita los estados (p. ej. cosechas solo en cosecha).
+ */
+export async function getOpenProjects(statuses?: ProjectStatus[]) {
+  const ctx = await getOrgContext()
+  const supabase = await createClient()
+  let query = supabase
+    .from("projects")
+    .select("id, code, name, status, start_date, project_plots(plot:plots!inner(id, name, farm:farms!inner(name)))")
+    .eq("organization_id", ctx.organization.id)
+    .not("status", "in", "(cerrado,cancelado)")
+    .order("code")
+  if (statuses) query = query.in("status", statuses)
+  const { data, error } = await query
+  if (error) throw new Error("No fue posible cargar los proyectos.")
+  return data.map(({ project_plots, ...p }) => ({
+    ...p,
+    plots: project_plots
+      .map((pp) => ({ id: pp.plot.id, name: pp.plot.name, farm: pp.plot.farm.name }))
+      .sort((a, b) => a.farm.localeCompare(b.farm, "es") || a.name.localeCompare(b.name, "es")),
+  }))
+}
+
 export type ProjectListItem = Awaited<ReturnType<typeof getProjects>>[number]
 export type ProjectDetail = Awaited<ReturnType<typeof getProject>>
+export type OpenProject = Awaited<ReturnType<typeof getOpenProjects>>[number]
 export type AssignablePlot = Awaited<ReturnType<typeof getAssignablePlots>>[number]

@@ -25,10 +25,25 @@
 | 21 | Se permite insertar `id` desde el cliente. | Necesario para la captura sin conexión de la Fase 6 (ids generados en el dispositivo). |
 | 22 | Presupuesto del proyecto como importe total; el desglose por categoría llega en la Fase 5. | Evita duplicar la captura antes de existir el módulo de costos. |
 | 23 | Con Partial Prerendering, una página inexistente responde HTTP 200 con la vista 404 transmitida. | El shell estático ya se envió cuando `notFound()` se ejecuta; es el comportamiento de Next 16. |
+| 24 | El costo de insumos nace en el **consumo**, no en la compra; las salidas se valoran a costo promedio ponderado. | Evita contar dos veces una compra y permite comprar para varios proyectos. Promedio en lugar de PEPS: aún no hay lotes y es el método usual en el campo. |
+| 25 | El producto guarda `stock` y `stock_value`; el costo promedio es columna derivada. | Valor de almacén + costo imputado cuadra al centavo con las compras; no se acumulan residuos de redondeo. |
+| 26 | Movimientos de inventario, ventas y pagos son **inmutables**: se anulan o cancelan con contrapartida y motivo. | Trazabilidad completa; los saldos siempre se explican con el historial. |
+| 27 | Identificadores generados en el cliente como **llave de idempotencia**. | Doble clic o reintentos de red no duplican costos, ventas ni pagos; prepara la captura sin conexión (Fase 6). |
+| 28 | Gastos directos con catálogo cerrado de categorías que excluye insumos, maquinaria y mano de obra. | Cada costo tiene una sola vía de captura. |
+| 29 | Tarifas de maquinaria y mano de obra **congeladas** en cada registro. | Cambiar una tarifa no reescribe costos históricos. |
+| 30 | Un proyecto cerrado o cancelado no admite crear, modificar ni eliminar costos, cosechas ni ventas. | El cierre deja cifras definitivas; para corregir, un administrador reabre el proyecto. Los **pagos** sí se registran después del cierre (son cobranza, no ingreso). |
+| 31 | Cosechas y ventas en **kilogramos**; lo vendido por proyecto ≤ lo cosechado. | Base común para costo por kg y disponible para venta, sin importar la unidad comercial del cultivo (cajas, toneladas). |
+| 32 | Ventas sin IVA (tasa 0 %). | Productos agrícolas sin transformar; CFDI fuera de alcance. |
+| 33 | Clientes, ventas, pagos y gastos solo los leen propietario, administrador, finanzas y consulta; el expediente muestra costos solo a esos roles. | Por la RLS un agrónomo vería cifras incompletas (sin gastos ni ventas); se prefiere no mostrar totales parciales. |
+| 34 | Un empleado registra máximo 1 jornal por día entre todos los proyectos; el tiempo extra se registra como destajo. | Evita pagar o costear dos veces la misma jornada. |
 
 ## Pendientes conocidos
 
 - Las plantillas de correo de Supabase local están en inglés; se traducirán al configurar
   el proyecto de producción (`supabase/templates/`).
+- Los registros de costo se corrigen eliminando y volviendo a capturar (mientras el proyecto esté vigente);
+  no hay edición en la interfaz.
+- Las listas de movimientos y registros muestran los 200–300 más recientes; falta paginación y filtro por
+  fechas.
 - `npm audit` reporta vulnerabilidades moderadas en dependencias de desarrollo
   transitivas del generador; se revisarán antes del despliegue (Fase 6).

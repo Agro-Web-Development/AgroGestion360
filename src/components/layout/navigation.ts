@@ -45,25 +45,25 @@ export const NAVIGATION: NavGroup[] = [
   {
     label: "Operación",
     items: [
-      { title: "Inventario", href: "/inventario", icon: Package, comingInPhase: 3 },
+      { title: "Inventario", href: "/inventario", icon: Package },
       { title: "Bitácoras", href: "/bitacoras", icon: ClipboardList, comingInPhase: 3 },
-      { title: "Maquinaria", href: "/maquinaria", icon: Tractor, comingInPhase: 3 },
-      { title: "Personal", href: "/personal", icon: UsersRound, comingInPhase: 3 },
+      { title: "Maquinaria", href: "/maquinaria", icon: Tractor },
+      { title: "Personal", href: "/personal", icon: UsersRound },
     ],
   },
   {
     label: "Comercialización",
     items: [
-      { title: "Cosechas", href: "/produccion", icon: Wheat, comingInPhase: 4 },
-      { title: "Clientes", href: "/clientes", icon: Building2, comingInPhase: 4 },
-      { title: "Ventas", href: "/ventas", icon: ShoppingCart, comingInPhase: 4 },
-      { title: "Cobranza", href: "/pagos", icon: HandCoins, comingInPhase: 4 },
+      { title: "Cosechas", href: "/produccion", icon: Wheat },
+      { title: "Clientes", href: "/clientes", icon: Building2 },
+      { title: "Ventas", href: "/ventas", icon: ShoppingCart },
+      { title: "Cobranza", href: "/pagos", icon: HandCoins },
     ],
   },
   {
     label: "Finanzas",
     items: [
-      { title: "Gastos y rentabilidad", href: "/gastos", icon: Wallet, comingInPhase: 5 },
+      { title: "Gastos y rentabilidad", href: "/gastos", icon: Wallet },
       { title: "Reportes", href: "/reportes", icon: BarChart3, comingInPhase: 5 },
     ],
   },

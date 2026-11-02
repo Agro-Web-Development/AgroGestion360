@@ -42,3 +42,12 @@ export function dbErrorMessage(error: Pick<PostgrestError, "code" | "message">):
   if (error.code === "23514") return "Algún dato no cumple las reglas de validación."
   return "Ocurrió un error inesperado. Intenta de nuevo."
 }
+
+/**
+ * Las altas de registros operativos llevan un id generado en el cliente. Si un
+ * reintento (doble clic, red intermitente) choca con la llave primaria, el
+ * registro ya quedó guardado y no debe duplicarse ni reportarse como error.
+ */
+export function isDuplicateId(error: Pick<PostgrestError, "code" | "message">): boolean {
+  return error.code === "23505" && error.message.includes('_pkey"')
+}

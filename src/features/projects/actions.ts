@@ -87,7 +87,10 @@ export async function deleteProject(projectId: string): Promise<ActionResult> {
     .eq("id", projectId)
     .eq("organization_id", ctx.organization.id)
     .select("id")
-  if (error) return failure(dbErrorMessage(error))
+  if (error) {
+    if (error.code === "23503") return failure("El proyecto tiene costos, cosechas o ventas registradas; no puede eliminarse.")
+    return failure(dbErrorMessage(error))
+  }
   // La RLS solo permite eliminar proyectos en planeación o cancelados.
   if (!data?.length) return failure("Solo se pueden eliminar proyectos en planeación o cancelados.")
 
@@ -154,7 +157,10 @@ export async function removeProjectPlot(projectPlotId: string): Promise<ActionRe
     .eq("id", projectPlotId)
     .eq("organization_id", ctx.organization.id)
     .select("id")
-  if (error) return failure(dbErrorMessage(error))
+  if (error) {
+    if (error.code === "23503") return failure("La parcela tiene costos o cosechas registradas en este proyecto; no puede retirarse.")
+    return failure(dbErrorMessage(error))
+  }
   if (!data?.length) return failure("No tienes permiso para modificar el proyecto.")
 
   refresh()

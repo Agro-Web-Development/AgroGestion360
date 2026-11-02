@@ -49,10 +49,12 @@ export const PERMISSIONS = {
   "fieldlogs.write": ["propietario", "administrador", "agronomo", "supervisor"],
   "inventory.write": ["propietario", "administrador", "almacen"],
   "machinery.write": ["propietario", "administrador", "agronomo"],
+  "employees.write": ["propietario", "administrador", "agronomo"],
   "labor.write": ["propietario", "administrador", "agronomo", "supervisor"],
   "harvest.write": ["propietario", "administrador", "agronomo", "supervisor"],
   "sales.write": ["propietario", "administrador", "finanzas"],
   "payments.write": ["propietario", "administrador", "finanzas"],
+  "expenses.write": ["propietario", "administrador", "finanzas"],
   "finance.read": ["propietario", "administrador", "finanzas", "consulta"],
 } as const satisfies Record<string, readonly AppRole[]>
 

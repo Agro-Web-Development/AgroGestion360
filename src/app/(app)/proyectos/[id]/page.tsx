@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Layers, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, CalendarDays, Layers, Pencil, Receipt, Trash2 } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -8,6 +8,9 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { yieldUnitShort } from "@/features/crops/schemas"
+import { CostEntriesTable } from "@/features/finance/components/cost-entries-table"
+import { ProjectFinanceCard } from "@/features/finance/components/project-finance-card"
+import { getProjectCost, getProjectCostEntries } from "@/features/finance/queries"
 import { deleteProject } from "@/features/projects/actions"
 import { AssignPlotDialog } from "@/features/projects/components/assign-plot-dialog"
 import { ChangeStatusDialog } from "@/features/projects/components/change-status-dialog"
@@ -23,12 +26,17 @@ import { formatDate, formatDateTime, formatMoney, formatNumber, todayISO } from 
 export const metadata: Metadata = { title: "Expediente del proyecto" }
 
 const DAY_MS = 86_400_000
+const COST_ENTRY_LIMIT = 100
 
 export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]">) {
   const { id } = await params
   const ctx = await getOrgContext()
   const canWrite = can(ctx.role, "projects.write")
+  const canSeeFinance = can(ctx.role, "finance.read")
   const [project, history, members] = await Promise.all([getProject(id), getProjectHistory(id), getActiveMembers()])
+  const [costs, costEntries] = canSeeFinance
+    ? await Promise.all([getProjectCost(project.id), getProjectCostEntries(project.id, COST_ENTRY_LIMIT)])
+    : [null, []]
   const closed = isClosed(project.status)
   const plotsEditable = canWrite && !closed
   const assignable = plotsEditable ? await getAssignablePlots(project.id) : []
@@ -139,6 +147,33 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
             </CardContent>
           </Card>
 
+          {canSeeFinance && costs && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalle de costos</CardTitle>
+                <CardDescription>
+                  Consumos de insumos, maquinaria, mano de obra y gastos directos imputados al proyecto.
+                  {closed && " El proyecto está cerrado: sus costos ya no se modifican."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {costEntries.length === 0 ? (
+                  <EmptyState
+                    icon={Receipt}
+                    title="Sin costos registrados"
+                    description="Registra consumos en Inventario, uso en Maquinaria, jornales en Personal o gastos directos."
+                  />
+                ) : (
+                  <CostEntriesTable
+                    entries={costEntries}
+                    total={costs.totalCost}
+                    limited={costEntries.length === COST_ENTRY_LIMIT}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {project.description && (
             <Card>
               <CardHeader>
@@ -234,15 +269,7 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
               </dl>
             </CardContent>
           </Card>
-          <Card className="bg-muted/40">
-            <CardHeader>
-              <CardTitle className="text-base">Próximamente en el expediente</CardTitle>
-              <CardDescription>
-                Consumos de insumos, bitácoras de campo, mano de obra y maquinaria (fase 3); cosechas y ventas (fase 4);
-                costos y rentabilidad (fase 5).
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          {canSeeFinance && costs && <ProjectFinanceCard costs={costs} />}
         </div>
       </div>
     </>

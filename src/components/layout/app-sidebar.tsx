@@ -44,7 +44,7 @@ export function AppSidebar({ organizationSlot }: { organizationSlot: React.React
       </SidebarContent>
 
       <SidebarFooter className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-        <p className="px-2">Versión 0.2 · Fase 2</p>
+        <p className="px-2">Versión 0.3 · Fases 3–5 (finanzas)</p>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

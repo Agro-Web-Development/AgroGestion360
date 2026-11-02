@@ -113,7 +113,7 @@ export function ProjectForm({
         <Card>
           <CardHeader>
             <CardTitle>Metas</CardTitle>
-            <CardDescription>El presupuesto por categoría y los costos reales se habilitan en la fase 5.</CardDescription>
+            <CardDescription>El costo real y su avance contra el presupuesto se calculan en el expediente.</CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup>

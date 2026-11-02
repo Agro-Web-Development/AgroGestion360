@@ -10,6 +10,7 @@ import {
   Receipt,
   ShoppingCart,
   Sprout,
+  TrendingUp,
   Users,
   Wallet,
   Wheat,
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarListChart } from "@/features/dashboard/components/bar-list-chart"
 import { getAgroSummary, getRecentProjects, getUpcomingHarvests } from "@/features/dashboard/queries"
+import { getFinanceSummary } from "@/features/finance/queries"
 import { getRecentActivity, getTeamSummary } from "@/features/organizations/queries"
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge"
 import { PROJECT_STATUSES, STATUS_LABELS } from "@/features/projects/status"
@@ -31,17 +33,6 @@ import { getOrgContext } from "@/lib/auth/session"
 import { formatDate, formatDateTime, formatMoney, formatNumber, todayISO } from "@/lib/format"
 
 export const metadata: Metadata = { title: "Dashboard" }
-
-/** Indicadores que se alimentarán con los módulos de las siguientes fases. */
-const UPCOMING_KPIS = [
-  { label: "Inversión acumulada", icon: Wallet, phase: 5 },
-  { label: "Gastos del periodo", icon: Receipt, phase: 5 },
-  { label: "Producción cosechada", icon: Wheat, phase: 4 },
-  { label: "Pendiente de venta", icon: PackageCheck, phase: 4 },
-  { label: "Ventas registradas", icon: ShoppingCart, phase: 4 },
-  { label: "Dinero cobrado", icon: CircleDollarSign, phase: 4 },
-  { label: "Cuentas por cobrar", icon: HandCoins, phase: 4 },
-]
 
 const TABLE_LABELS: Record<string, string> = {
   organizations: "Organización",
@@ -52,18 +43,32 @@ const TABLE_LABELS: Record<string, string> = {
   crops: "Cultivo",
   projects: "Proyecto",
   project_plots: "Asignación de parcela",
+  inventory_products: "Producto de inventario",
+  inventory_movements: "Movimiento de inventario",
+  machinery: "Equipo",
+  machinery_usage: "Uso de maquinaria",
+  employees: "Empleado",
+  labor_records: "Mano de obra",
+  project_expenses: "Gasto",
+  harvests: "Cosecha",
+  customers: "Cliente",
+  sales: "Venta",
+  sale_items: "Partida de venta",
+  payments: "Pago",
 }
 const ACTION_LABELS: Record<string, string> = { INSERT: "alta", UPDATE: "cambio", DELETE: "baja" }
 
 export default async function DashboardPage() {
   const ctx = await getOrgContext()
   const canManage = can(ctx.role, "members.manage")
-  const [team, activity, agro, harvests, recent] = await Promise.all([
+  const canSeeFinance = can(ctx.role, "finance.read")
+  const [team, activity, agro, harvests, recent, finance] = await Promise.all([
     getTeamSummary(),
     can(ctx.role, "audit.read") ? getRecentActivity() : Promise.resolve([]),
     getAgroSummary(),
     getUpcomingHarvests(),
     getRecentProjects(),
+    canSeeFinance ? getFinanceSummary() : Promise.resolve(null),
   ])
   const firstName = ctx.user.fullName.split(" ")[0]
   const today = todayISO()
@@ -232,27 +237,60 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <section aria-labelledby="kpi-next" className="mb-8 space-y-3">
-        <div>
-          <h2 id="kpi-next" className="font-semibold">Indicadores financieros y comerciales</h2>
-          <p className="text-sm text-muted-foreground">
-            Se calcularán con los registros reales de cada módulo conforme se habiliten. Las ventas registradas y el
-            dinero efectivamente cobrado se mostrarán por separado.
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {UPCOMING_KPIS.map((kpi) => (
+      {finance && (
+        <section aria-labelledby="kpi-finance" className="mb-8 space-y-3">
+          <div>
+            <h2 id="kpi-finance" className="font-semibold">Indicadores financieros y comerciales</h2>
+            <p className="text-sm text-muted-foreground">
+              Ventas registradas y dinero efectivamente cobrado se muestran por separado; el cobro no es utilidad.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              key={kpi.label}
-              label={kpi.label}
-              value={null}
-              hint={`Sin registros · módulo disponible en la fase ${kpi.phase}`}
-              icon={kpi.icon}
-              muted
+              label="Inversión acumulada"
+              value={formatMoney(finance.total_cost)}
+              hint="Costo de producción de todos los proyectos"
+              icon={Wallet}
             />
-          ))}
-        </div>
-      </section>
+            <KpiCard label="Gastos del periodo" value={formatMoney(finance.period_cost)} hint="Costos registrados este mes" icon={Receipt} />
+            <KpiCard
+              label="Producción cosechada"
+              value={formatNumber(finance.harvested_kg / 1000, "t")}
+              hint={`Inventario de insumos: ${formatMoney(finance.inventory_value)}`}
+              icon={Wheat}
+            />
+            <KpiCard
+              label="Pendiente de venta"
+              value={formatNumber(finance.available_kg / 1000, "t")}
+              hint="Cosechado y aún no vendido"
+              icon={PackageCheck}
+            />
+            <KpiCard
+              label="Ventas registradas"
+              value={formatMoney(finance.sales_total)}
+              hint={`${formatNumber(finance.sales_count)} ventas vigentes`}
+              icon={ShoppingCart}
+            />
+            <KpiCard label="Dinero cobrado" value={formatMoney(finance.collected)} hint="Pagos aplicados" icon={CircleDollarSign} />
+            <KpiCard
+              label="Cuentas por cobrar"
+              value={formatMoney(finance.receivable)}
+              hint={
+                finance.overdue > 0
+                  ? `Vencido: ${formatMoney(finance.overdue)} (${formatNumber(finance.overdue_count)} ventas)`
+                  : "Sin saldos vencidos"
+              }
+              icon={HandCoins}
+            />
+            <KpiCard
+              label="Utilidad bruta"
+              value={formatMoney(finance.sales_total - finance.total_cost)}
+              hint="Ventas registradas − inversión acumulada"
+              icon={TrendingUp}
+            />
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

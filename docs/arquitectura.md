@@ -32,7 +32,9 @@ src/
       dashboard/
       ranchos/[id]     ranchos y sus parcelas
       cultivos/
-      proyectos/       lista, nuevo, [id] (expediente), [id]/editar
+      proyectos/       lista, nuevo, [id] (expediente con costos), [id]/editar
+      inventario/ maquinaria/ personal/ produccion/
+      clientes/ ventas/ (nueva, [id]) pagos/ gastos/
       configuracion/   organizacion, usuarios, perfil
     auth/callback/     intercambio de código PKCE / token_hash
     auth/aceptar/      aceptación de invitaciones (tokens en el fragmento)
@@ -114,37 +116,70 @@ Reglas en base de datos:
 - **Dashboard:** `dashboard_summary(org)` agrega los indicadores en SQL con `SECURITY INVOKER`
   (respeta la RLS del usuario).
 
-### Planeado (Fases 3–5)
+### Implementado (módulos financieros)
 
-Todas las tablas llevan `id uuid`, `organization_id` (FK + índice), `created_at/by`,
-`updated_at/by`, RLS con `is_member()` para lectura y `has_role()` para escritura.
-Importes en `NUMERIC(14,2)`, cantidades en `NUMERIC(14,3)`.
+| Tabla / vista               | Propósito                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| inventory_products          | Insumos con existencia y valor (`stock`, `stock_value`); costo promedio derivado. |
+| inventory_movements         | Entrada, consumo, devolución y ajustes. Inmutables; se anulan con contrapartida.  |
+| machinery · machinery_usage | Equipos con costo/hora; uso por proyecto con la tarifa congelada.                 |
+| employees · labor_records   | Personal con salario diario; jornales y destajo por proyecto/parcela.             |
+| project_expenses            | Gastos directos (renta, agua, energía, fletes, maquila…).                         |
+| harvests                    | Cortes por proyecto/parcela en kg, con calidad.                                   |
+| customers                   | Compradores con días de crédito.                                                  |
+| sales · sale_items          | Ventas con folio `VTA-AAAA-0001`; partidas en kg imputadas a proyectos.           |
+| payments                    | Pagos parciales o de liquidación; se cancelan, no se eliminan.                    |
+| v_project_cost_entries      | **Única fuente de costos**: un renglón por consumo, uso, jornal o gasto.          |
+| v_project_costs             | Por proyecto: costo por categoría, costo/ha, costo/kg, cosechado, vendido, ventas, cobrado, saldo, utilidad y % de presupuesto. |
+| v_sale_balances             | Saldo, estado de pago y días vencidos por venta.                                  |
 
-- **Presupuestos:** `project_budgets` por categoría de costo (Fase 5).
-- **Inventario:** `suppliers`, `input_categories`, `warehouses`, `inventory_products`,
-  `inventory_lots` (lote, caducidad, costo), `inventory_stock` (CHECK ≥ 0),
-  `inventory_movements` (entrada, salida, ajuste, devolución, transferencia; las salidas por
-  consumo exigen `project_id` y `plot_id`). Cada movimiento lleva `idempotency_key` única.
-- **Bitácoras:** `irrigation_logs`, `chemical_applications`, `agricultural_activities` +
-  `activity_types`; `attachments` polimórfico sobre Storage.
-- **Maquinaria y personal:** `machinery`, `machinery_usage`, `machinery_maintenance`;
-  `employees`, `crews`, `labor_records` (jornada o destajo).
-- **Producción y ventas:** `harvests` (cortes), `harvest_batches` (calidad, disponible,
-  merma), `customers`, `sales` (folio por organización), `sale_items` → `harvest_batches`,
-  `payments` (anticipo, parcial, liquidación).
-- **Finanzas:** `project_expenses`; vistas `v_project_costs`, `v_sale_balances`,
-  `v_project_profitability`.
+RPC transaccionales (`SECURITY DEFINER`, verifican rol y bloquean filas):
+`register_inventory_movement`, `reverse_inventory_movement`, `create_sale`, `cancel_sale`,
+`register_payment`, `cancel_payment`. Indicadores: `finance_summary(org)` (`SECURITY INVOKER`).
 
-**Regla de costos:** el costo de un proyecto proviene de *consumos* (salidas de inventario),
-mano de obra, maquinaria y gastos directos. Las compras/entradas de almacén no generan costo
-de proyecto, evitando duplicidad. Ventas registradas y dinero cobrado se reportan por
-separado; el cobro no se presenta como utilidad.
+**Regla de costos (sin duplicidad):**
+
+- El costo de un proyecto proviene solo de consumos de inventario, uso de maquinaria, mano de obra y
+  gastos directos. Las compras/entradas de almacén no son costo de proyecto; el insumo se vuelve costo al
+  consumirse, valorado al costo promedio.
+- Las categorías de gasto directo excluyen insumos, maquinaria y mano de obra, para que no puedan
+  capturarse por dos vías. La tarifa de maquinaria se define sin combustible cuando el diésel sale del
+  inventario.
+- Valor en almacén + costo imputado a proyectos = compras netas, al centavo: las salidas que vacían la
+  existencia se llevan exactamente el valor restante y las devoluciones regresan al costo con que el
+  proyecto consumió.
+- `v_project_costs` agrega sobre `v_project_cost_entries`, y cada métrica (área, cosecha, ventas, cobranza)
+  se agrega en su propia subconsulta antes de unir; ninguna unión multiplica renglones.
+- Duplicados por reintento: los registros llevan un `id` generado en el cliente (`lib/ids.ts`); las RPC
+  devuelven el registro existente y las altas directas tratan el choque de llave primaria como éxito.
+  Además: una factura por proveedor y proyecto, máximo 1 jornal por empleado y día, cada movimiento de
+  inventario se anula una sola vez y lo vendido nunca excede lo cosechado.
+
+**Transaccionalidad y concurrencia:** cada RPC corre en una sola transacción (si una partida es inválida
+no queda ni el encabezado ni el folio). Se bloquea con `FOR UPDATE` el producto (existencias), la venta
+(saldo) y los proyectos de una venta (en orden de id, para evitar interbloqueos). Los registros de costo
+toman `FOR SHARE` sobre el proyecto: un cierre concurrente (`change_project_status`, `FOR UPDATE`) espera
+y, una vez cerrado, el proyecto ya no admite costos ni ventas.
+
+**Ventas y cobranza:** ventas registradas, dinero cobrado y saldo se reportan por separado; la utilidad
+bruta es ventas − costo de producción. Lo cobrado de una venta con varios proyectos se prorratea por
+importe de partida.
+
+**Acceso:** operación (inventario, maquinaria, personal, cosechas) la leen todos los miembros; clientes,
+ventas, pagos y gastos solo propietario, administrador, finanzas y consulta (`finance.read`).
+
+### Pendiente
+
+- Presupuestos por categoría (`project_budgets`), reportes exportables (CSV/XLSX/PDF) y bitácoras de
+  campo (`irrigation_logs`, `chemical_applications`, `attachments`).
+- Inventario: almacenes múltiples, lotes y caducidades, transferencias, proveedores como catálogo.
+- Ventas: anticipos sin venta, notas de crédito y CFDI.
 
 ## Roadmap
 
 1. ✅ Fundación: Next.js, tema, Supabase, autenticación, organizaciones, roles, usuarios.
 2. ✅ Dashboard con indicadores reales, ranchos, parcelas, cultivos, proyectos y expediente.
-3. Inventarios, bitácoras, maquinaria, recursos humanos.
-4. Cortes de producción, clientes, ventas, pagos, cuentas por cobrar.
-5. Presupuestos, gastos, costos, rentabilidad, reportes (CSV/XLSX/PDF).
+3. ✅ Inventario de insumos, maquinaria, recursos humanos · ⏳ bitácoras de campo.
+4. ✅ Cortes de producción, clientes, ventas, pagos, cuentas por cobrar.
+5. ✅ Gastos, costos, rentabilidad · ⏳ presupuestos por categoría, reportes (CSV/XLSX/PDF).
 6. PWA, captura sin conexión con sincronización, pruebas E2E, endurecimiento y despliegue.

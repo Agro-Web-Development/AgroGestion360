@@ -4,7 +4,8 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fase 2 (Producción agrícola) completada. Ver [docs/arquitectura.md](docs/arquitectura.md)
+**Estado:** Fases 1–2 completas y módulos financieros (inventario de insumos, maquinaria, mano de obra,
+gastos, cosechas, ventas, pagos, cobranza y rentabilidad) implementados. Ver [docs/arquitectura.md](docs/arquitectura.md)
 y [docs/decisiones.md](docs/decisiones.md).
 
 ## Stack
@@ -96,6 +97,30 @@ Los datos demo incluyen 2 ranchos, 5 parcelas, 4 cultivos y 4 proyectos en disti
    Cancelar exige motivo y libera la superficie; reabrir solo lo hace propietario/administrador.
 5. **Permisos:** como `agronomo@…` puedes crear y editar pero no eliminar; como `campo@…` o
    `consulta@…` todo es de solo lectura.
+
+## Cómo probar los módulos financieros
+
+Los datos demo incluyen inventario con compras y consumos, 4 equipos, 4 empleados, gastos directos,
+4 cortes de brócoli, 3 clientes y 3 ventas (una pagada, una con pago parcial y una vencida).
+
+1. **Inventario:** registra una *entrada* (compra) y observa que el costo promedio se recalcula pero
+   ningún proyecto cambia de costo. Registra un *consumo* a un proyecto/parcela: sale al costo promedio
+   y aparece en el detalle de costos del proyecto. Intenta consumir más de la existencia (se rechaza).
+   *Anular* crea la contrapartida exacta y solo se permite una vez.
+2. **Maquinaria y personal:** registra horas de un equipo o jornales; la tarifa queda congelada (cambiar la
+   tarifa del equipo no altera lo registrado). Un empleado no puede acumular más de 1 jornal por día.
+3. **Gastos y rentabilidad:** gastos directos por categoría (sin insumos, maquinaria ni mano de obra, que
+   vienen de su módulo); la misma factura no se acepta dos veces en un proyecto. La pestaña de
+   rentabilidad muestra costo de producción, costo/ha, costo/kg, ventas y utilidad por proyecto.
+4. **Cosechas:** solo en proyectos en cosecha o comercialización; no se puede eliminar producción ya vendida.
+5. **Ventas:** *Nueva venta* con varias partidas; no se vende más de lo cosechado disponible. La venta,
+   sus partidas y el folio `VTA-AAAA-0001` se crean en una sola transacción.
+6. **Cobranza:** pagos parciales que nunca exceden el saldo; cancelar un pago restituye el saldo; una venta
+   con pagos no se cancela. Antigüedad de saldos por cliente.
+7. **Expediente del proyecto:** tarjeta *Costos y resultados* y *Detalle de costos* (cuyo total coincide
+   siempre con el costo de producción). Al cerrar el proyecto sus costos e ingresos quedan congelados.
+8. **Permisos:** `agronomo@…` registra maquinaria y mano de obra pero no ve ventas, clientes ni gastos;
+   `consulta@…` ve todo en solo lectura.
 
 ## Seguridad
 
