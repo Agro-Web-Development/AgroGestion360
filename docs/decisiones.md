@@ -18,6 +18,13 @@
 | 14 | Módulos de fases futuras aparecen en el menú como "Pronto" (deshabilitados) y el dashboard muestra sus indicadores como "Sin registros". | No se muestran datos simulados en lugar de consultas reales. |
 | 15 | Contraseña mínima de 8 caracteres con letras y números (Zod + `minimum_password_length` en Supabase). | Seguridad básica razonable para usuarios de campo. |
 | 16 | `@types/node@24` en lugar de 20. | Vitest 5 requiere tipos de Node ≥ 22. |
+| 17 | FKs compuestas `(organization_id, id)` en todas las relaciones agrícolas. | La RLS filtra lecturas, pero una FK simple permitiría *referenciar* un id de otra organización. |
+| 18 | Estado del proyecto solo por RPC; historial escrito por trigger. | Garantiza transiciones válidas y un historial que no se puede omitir ni falsificar. |
+| 19 | La superficie se compromete solo mientras el proyecto está vigente; cerrar o cancelar la libera. | Permite reutilizar parcelas entre ciclos sin borrar el historial. |
+| 20 | Desactivar en lugar de eliminar cuando hay historial (rancho, parcela, cultivo); eliminar solo registros sin uso. | Las FKs `ON DELETE RESTRICT` protegen la trazabilidad; la UI ofrece desactivar. |
+| 21 | Se permite insertar `id` desde el cliente. | Necesario para la captura sin conexión de la Fase 6 (ids generados en el dispositivo). |
+| 22 | Presupuesto del proyecto como importe total; el desglose por categoría llega en la Fase 5. | Evita duplicar la captura antes de existir el módulo de costos. |
+| 23 | Con Partial Prerendering, una página inexistente responde HTTP 200 con la vista 404 transmitida. | El shell estático ya se envió cuando `notFound()` se ejecuta; es el comportamiento de Next 16. |
 
 ## Pendientes conocidos
 

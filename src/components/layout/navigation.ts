@@ -37,9 +37,9 @@ export const NAVIGATION: NavGroup[] = [
   {
     label: "Producción agrícola",
     items: [
-      { title: "Proyectos", href: "/proyectos", icon: Sprout, comingInPhase: 2 },
-      { title: "Ranchos y parcelas", href: "/parcelas", icon: Map, comingInPhase: 2 },
-      { title: "Cultivos", href: "/cultivos", icon: Leaf, comingInPhase: 2 },
+      { title: "Proyectos", href: "/proyectos", icon: Sprout },
+      { title: "Ranchos y parcelas", href: "/ranchos", icon: Map },
+      { title: "Cultivos", href: "/cultivos", icon: Leaf },
     ],
   },
   {

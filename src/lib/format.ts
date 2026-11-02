@@ -43,9 +43,19 @@ export function formatNumber(value: number | string | null | undefined, unit?: s
   return unit ? `${numberFormatter.format(n)} ${unit}` : numberFormatter.format(n)
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "—"
+  // Las columnas DATE llegan como "AAAA-MM-DD"; se fijan al mediodía UTC para que
+  // la conversión a la zona horaria de México no las recorra al día anterior.
+  if (typeof value === "string" && DATE_ONLY.test(value)) return dateFormatter.format(new Date(`${value}T12:00:00Z`))
   return dateFormatter.format(typeof value === "string" ? new Date(value) : value)
+}
+
+/** Fecha de hoy (AAAA-MM-DD) en la zona horaria de la organización. */
+export function todayISO(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(new Date())
 }
 
 export function formatDateTime(value: string | Date | null | undefined): string {

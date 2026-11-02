@@ -18,6 +18,7 @@ export function FormInput<T extends FieldValues>({
   name,
   label,
   description,
+  className,
   ...inputProps
 }: FormInputProps<T>) {
   return (
@@ -25,7 +26,7 @@ export function FormInput<T extends FieldValues>({
       control={control}
       name={name}
       render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid || undefined}>
+        <Field data-invalid={fieldState.invalid || undefined} className={className}>
           <FieldLabel htmlFor={name}>{label}</FieldLabel>
           <Input
             id={name}

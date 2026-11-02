@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Suspense } from "react"
 
 import { Logo } from "@/components/brand/logo"
 import {
@@ -22,7 +23,6 @@ import {
 import { NAVIGATION } from "./navigation"
 
 export function AppSidebar({ organizationSlot }: { organizationSlot: React.ReactNode }) {
-  const pathname = usePathname()
   const { isMobile, setOpenMobile } = useSidebar()
 
   return (
@@ -36,55 +36,72 @@ export function AppSidebar({ organizationSlot }: { organizationSlot: React.React
       </SidebarHeader>
 
       <SidebarContent>
-        {NAVIGATION.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  const Icon = item.icon
-
-                  if (item.comingInPhase) {
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          disabled
-                          aria-disabled
-                          tooltip={`${item.title} · Próximamente`}
-                          className="opacity-60"
-                        >
-                          <Icon aria-hidden />
-                          <span>{item.title}</span>
-                        </SidebarMenuButton>
-                        <SidebarMenuBadge className="text-[10px] text-sidebar-foreground/60">
-                          Pronto
-                        </SidebarMenuBadge>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                        <Link href={item.href} onClick={() => isMobile && setOpenMobile(false)}>
-                          <Icon aria-hidden />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {/* La ruta actual solo se conoce al solicitar la página: el menú del shell
+            estático se muestra sin elemento activo y se reemplaza al transmitirse. */}
+        <Suspense fallback={<NavigationMenu pathname={null} />}>
+          <ActiveNavigationMenu />
+        </Suspense>
       </SidebarContent>
 
       <SidebarFooter className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-        <p className="px-2">Versión 0.1 · Fase 1</p>
+        <p className="px-2">Versión 0.2 · Fase 2</p>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
+  )
+}
+
+function ActiveNavigationMenu() {
+  return <NavigationMenu pathname={usePathname()} />
+}
+
+function NavigationMenu({ pathname }: { pathname: string | null }) {
+  const { isMobile, setOpenMobile } = useSidebar()
+  return (
+    <>
+    {NAVIGATION.map((group) => (
+      <SidebarGroup key={group.label}>
+        <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {group.items.map((item) => {
+              const active = pathname !== null && (pathname === item.href || pathname.startsWith(`${item.href}/`))
+              const Icon = item.icon
+
+              if (item.comingInPhase) {
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      disabled
+                      aria-disabled
+                      tooltip={`${item.title} · Próximamente`}
+                      className="opacity-60"
+                    >
+                      <Icon aria-hidden />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                    <SidebarMenuBadge className="text-[10px] text-sidebar-foreground/60">
+                      Pronto
+                    </SidebarMenuBadge>
+                  </SidebarMenuItem>
+                )
+              }
+
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                    <Link href={item.href} onClick={() => isMobile && setOpenMobile(false)}>
+                      <Icon aria-hidden />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    ))}
+    </>
   )
 }

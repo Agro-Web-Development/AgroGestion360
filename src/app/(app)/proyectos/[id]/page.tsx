@@ -1,0 +1,250 @@
+import { ArrowLeft, CalendarDays, Layers, Pencil, Trash2 } from "lucide-react"
+import type { Metadata } from "next"
+import Link from "next/link"
+
+import { PageHeader } from "@/components/layout/page-header"
+import { ConfirmAction } from "@/components/shared/confirm-action"
+import { EmptyState } from "@/components/shared/empty-state"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { yieldUnitShort } from "@/features/crops/schemas"
+import { deleteProject } from "@/features/projects/actions"
+import { AssignPlotDialog } from "@/features/projects/components/assign-plot-dialog"
+import { ChangeStatusDialog } from "@/features/projects/components/change-status-dialog"
+import { ProjectPlotsTable } from "@/features/projects/components/project-plots-table"
+import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge"
+import { StatusProgress } from "@/features/projects/components/status-progress"
+import { getActiveMembers, getAssignablePlots, getProject, getProjectHistory } from "@/features/projects/queries"
+import { isClosed, nextStatuses, STATUS_LABELS } from "@/features/projects/status"
+import { can } from "@/lib/auth/roles"
+import { getOrgContext } from "@/lib/auth/session"
+import { formatDate, formatDateTime, formatMoney, formatNumber, todayISO } from "@/lib/format"
+
+export const metadata: Metadata = { title: "Expediente del proyecto" }
+
+const DAY_MS = 86_400_000
+
+export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]">) {
+  const { id } = await params
+  const ctx = await getOrgContext()
+  const canWrite = can(ctx.role, "projects.write")
+  const [project, history, members] = await Promise.all([getProject(id), getProjectHistory(id), getActiveMembers()])
+  const closed = isClosed(project.status)
+  const plotsEditable = canWrite && !closed
+  const assignable = plotsEditable ? await getAssignablePlots(project.id) : []
+  const statusOptions = canWrite ? nextStatuses(project.status, can(ctx.role, "projects.reopen")) : []
+  const canDelete =
+    can(ctx.role, "projects.delete") && (project.status === "planeacion" || project.status === "cancelado")
+
+  const names = new Map(members.map((m) => [m.id, m.name]))
+  const area = project.project_plots.reduce((s, pp) => s + Number(pp.assigned_area_ha), 0)
+  const unit = yieldUnitShort(project.crop.yield_unit)
+  const yieldPerHa = project.expected_yield !== null && area > 0 ? Number(project.expected_yield) / area : null
+  const budgetPerHa = project.budget_amount !== null && area > 0 ? Number(project.budget_amount) / area : null
+  const daysToHarvest =
+    project.expected_harvest_date && !closed
+      ? Math.round((Date.parse(project.expected_harvest_date) - Date.parse(todayISO())) / DAY_MS)
+      : null
+
+  return (
+    <>
+      <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
+        <Link href="/proyectos">
+          <ArrowLeft aria-hidden /> Proyectos
+        </Link>
+      </Button>
+      <PageHeader
+        title={project.name}
+        description={[project.code, project.season].filter(Boolean).join(" · ")}
+        actions={
+          <>
+            {canWrite && (
+              <Button asChild variant="outline">
+                <Link href={`/proyectos/${project.id}/editar`}>
+                  <Pencil aria-hidden /> Editar
+                </Link>
+              </Button>
+            )}
+            {canDelete && (
+              <ConfirmAction
+                title="Eliminar proyecto"
+                description={`Se eliminará ${project.code} con sus asignaciones de parcelas e historial. Esta acción no se puede deshacer.`}
+                confirmLabel="Eliminar"
+                action={deleteProject.bind(null, project.id)}
+                trigger={
+                  <Button variant="destructive">
+                    <Trash2 aria-hidden /> Eliminar
+                  </Button>
+                }
+              />
+            )}
+            {statusOptions.length > 0 && (
+              <ChangeStatusDialog projectId={project.id} current={project.status} options={statusOptions} />
+            )}
+          </>
+        }
+      />
+
+      <Card className="mb-4">
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Estado:</span>
+            <ProjectStatusBadge status={project.status} />
+            {daysToHarvest !== null && (
+              <span className="ml-auto inline-flex items-center gap-1 text-muted-foreground">
+                <CalendarDays className="size-4" aria-hidden />
+                {daysToHarvest > 0
+                  ? `Cosecha estimada en ${formatNumber(daysToHarvest)} días`
+                  : daysToHarvest === 0
+                    ? "Cosecha estimada hoy"
+                    : `Cosecha estimada vencida hace ${formatNumber(-daysToHarvest)} días`}
+              </span>
+            )}
+          </div>
+          <StatusProgress status={project.status} />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <div className="space-y-4 xl:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle>Parcelas asignadas</CardTitle>
+                <CardDescription>
+                  {closed
+                    ? "El proyecto está cerrado o cancelado; su superficie ya no se considera comprometida."
+                    : "La superficie asignada queda comprometida mientras el proyecto esté vigente."}
+                </CardDescription>
+              </div>
+              {plotsEditable && project.project_plots.length > 0 && (
+                <AssignPlotDialog projectId={project.id} plots={assignable} />
+              )}
+            </CardHeader>
+            <CardContent>
+              {project.project_plots.length === 0 ? (
+                <EmptyState
+                  icon={Layers}
+                  title="Sin parcelas asignadas"
+                  description={
+                    plotsEditable && assignable.length === 0
+                      ? "No hay parcelas con superficie disponible. Registra parcelas en Ranchos y parcelas."
+                      : "Asigna las parcelas donde se desarrollará el cultivo."
+                  }
+                  action={plotsEditable && <AssignPlotDialog projectId={project.id} plots={assignable} />}
+                />
+              ) : (
+                <ProjectPlotsTable assignments={project.project_plots} editable={plotsEditable} />
+              )}
+            </CardContent>
+          </Card>
+
+          {project.description && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Descripción</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-line">{project.description}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial de estados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="relative space-y-4 border-l pl-5">
+                {history.map((h) => (
+                  <li key={h.id} className="relative">
+                    <span className="absolute top-1.5 -left-[25px] size-2.5 rounded-full border-2 border-background bg-primary" aria-hidden />
+                    <p className="text-sm">
+                      {h.from_status ? (
+                        <>
+                          {STATUS_LABELS[h.from_status]} → <span className="font-medium">{STATUS_LABELS[h.to_status]}</span>
+                        </>
+                      ) : (
+                        <span className="font-medium">Proyecto creado en {STATUS_LABELS[h.to_status]}</span>
+                      )}
+                    </p>
+                    {h.note && <p className="text-sm text-muted-foreground">“{h.note}”</p>}
+                    <p className="text-xs text-muted-foreground">
+                      {formatDateTime(h.changed_at)}
+                      {h.changed_by && ` · ${names.get(h.changed_by) ?? "Usuario sin acceso"}`}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
+                <dt className="text-muted-foreground">Cultivo</dt>
+                <dd className="text-right">
+                  {project.crop.name}
+                  {project.crop.variety && <span className="block text-muted-foreground">{project.crop.variety}</span>}
+                </dd>
+                <dt className="text-muted-foreground">Responsable</dt>
+                <dd className="text-right">
+                  {project.responsible ? project.responsible.full_name || project.responsible.email : "Sin asignar"}
+                </dd>
+                <dt className="text-muted-foreground">Superficie</dt>
+                <dd className="text-right tabular-nums">{formatNumber(area, "ha")}</dd>
+                <dt className="text-muted-foreground">Producción esperada</dt>
+                <dd className="text-right tabular-nums">
+                  {formatNumber(project.expected_yield, unit)}
+                  {yieldPerHa !== null && (
+                    <span className="block text-xs text-muted-foreground">{formatNumber(yieldPerHa, `${unit}/ha`)}</span>
+                  )}
+                </dd>
+                <dt className="text-muted-foreground">Presupuesto</dt>
+                <dd className="text-right tabular-nums">
+                  {formatMoney(project.budget_amount)}
+                  {budgetPerHa !== null && (
+                    <span className="block text-xs text-muted-foreground">{formatMoney(budgetPerHa)} / ha</span>
+                  )}
+                </dd>
+              </dl>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Fechas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <dt className="text-muted-foreground">Inicio</dt>
+                <dd className="text-right">{formatDate(project.start_date)}</dd>
+                <dt className="text-muted-foreground">Siembra</dt>
+                <dd className="text-right">{formatDate(project.planting_date)}</dd>
+                <dt className="text-muted-foreground">Cosecha estimada</dt>
+                <dd className="text-right">{formatDate(project.expected_harvest_date)}</dd>
+                <dt className="text-muted-foreground">Término</dt>
+                <dd className="text-right">{formatDate(project.end_date)}</dd>
+                <dt className="text-muted-foreground">Última modificación</dt>
+                <dd className="text-right">{formatDateTime(project.updated_at)}</dd>
+              </dl>
+            </CardContent>
+          </Card>
+          <Card className="bg-muted/40">
+            <CardHeader>
+              <CardTitle className="text-base">Próximamente en el expediente</CardTitle>
+              <CardDescription>
+                Consumos de insumos, bitácoras de campo, mano de obra y maquinaria (fase 3); cosechas y ventas (fase 4);
+                costos y rentabilidad (fase 5).
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    </>
+  )
+}

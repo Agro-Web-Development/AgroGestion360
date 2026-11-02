@@ -30,6 +30,9 @@ src/
     (auth)/            login, registro, recuperar, restablecer
     (app)/             shell autenticado (menú lateral + barra superior)
       dashboard/
+      ranchos/[id]     ranchos y sus parcelas
+      cultivos/
+      proyectos/       lista, nuevo, [id] (expediente), [id]/editar
       configuracion/   organizacion, usuarios, perfil
     auth/callback/     intercambio de código PKCE / token_hash
     auth/aceptar/      aceptación de invitaciones (tokens en el fragmento)
@@ -82,14 +85,42 @@ tests/unit/            pruebas Vitest
 Funciones: `is_member`, `has_role`, `user_role`, `shares_organization`,
 `create_organization`, `invite_member`, `cancel_invitation`, `update_member`.
 
-### Planeado (Fases 2–5)
+### Implementado (Fase 2)
+
+| Tabla                   | Propósito                                                                 |
+| ----------------------- | ------------------------------------------------------------------------- |
+| farms                   | Ranchos: ubicación, superficie total opcional, coordenadas, activo.       |
+| plots                   | Parcelas de un rancho: superficie, suelo, sistema de riego.              |
+| crops                   | Catálogo de cultivos y variedades con ciclo y unidad de producción.      |
+| projects                | Proyecto agrícola: folio `PRY-AAAA-0001`, cultivo, 8 estados, fechas, metas. |
+| project_plots           | N:M proyecto ↔ parcela con superficie asignada.                          |
+| project_status_history  | Historial de estados con nota y autor (lo escribe un trigger).           |
+| organization_counters   | Folios consecutivos por organización y año (solo vía `next_folio`).      |
+
+Reglas en base de datos:
+
+- **Integridad multiempresa:** FKs compuestas `(organization_id, id)`; una parcela, proyecto o
+  asignación no puede referir datos de otra organización aunque se conozca el id.
+- **Superficie:** las parcelas activas no exceden la superficie del rancho; lo asignado a
+  proyectos vigentes (no cerrados ni cancelados) no excede la parcela. Los triggers bloquean
+  la fila padre (`FOR UPDATE`) para evitar sobreasignación concurrente.
+- **Estados:** solo cambian con la RPC `change_project_status` (transiciones definidas en
+  `project_transition_allowed`, reflejadas en `features/projects/status.ts`). Cancelar exige
+  motivo; reabrir un proyecto cerrado/cancelado es exclusivo de propietario/administrador y
+  verifica que la superficie siga disponible.
+- **Permisos:** lectura para miembros; alta/edición para propietario, administrador y
+  agrónomo; eliminación solo propietario/administrador, y en proyectos solo en planeación o
+  cancelados. Columnas como `organization_id`, `code` y `status` no son editables por el cliente.
+- **Dashboard:** `dashboard_summary(org)` agrega los indicadores en SQL con `SECURITY INVOKER`
+  (respeta la RLS del usuario).
+
+### Planeado (Fases 3–5)
 
 Todas las tablas llevan `id uuid`, `organization_id` (FK + índice), `created_at/by`,
 `updated_at/by`, RLS con `is_member()` para lectura y `has_role()` para escritura.
 Importes en `NUMERIC(14,2)`, cantidades en `NUMERIC(14,3)`.
 
-- **Agrícola:** `farms` → `plots`; `crops`; `projects` (8 estados); `project_plots` (N:M con
-  superficie asignada); `project_budgets` por categoría de costo.
+- **Presupuestos:** `project_budgets` por categoría de costo (Fase 5).
 - **Inventario:** `suppliers`, `input_categories`, `warehouses`, `inventory_products`,
   `inventory_lots` (lote, caducidad, costo), `inventory_stock` (CHECK ≥ 0),
   `inventory_movements` (entrada, salida, ajuste, devolución, transferencia; las salidas por
@@ -112,7 +143,7 @@ separado; el cobro no se presenta como utilidad.
 ## Roadmap
 
 1. ✅ Fundación: Next.js, tema, Supabase, autenticación, organizaciones, roles, usuarios.
-2. Dashboard con indicadores reales, ranchos, parcelas, cultivos, proyectos y expediente.
+2. ✅ Dashboard con indicadores reales, ranchos, parcelas, cultivos, proyectos y expediente.
 3. Inventarios, bitácoras, maquinaria, recursos humanos.
 4. Cortes de producción, clientes, ventas, pagos, cuentas por cobrar.
 5. Presupuestos, gastos, costos, rentabilidad, reportes (CSV/XLSX/PDF).

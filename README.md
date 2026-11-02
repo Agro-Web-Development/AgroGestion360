@@ -4,7 +4,7 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fase 1 (Fundación) completada. Ver [docs/arquitectura.md](docs/arquitectura.md)
+**Estado:** Fase 2 (Producción agrícola) completada. Ver [docs/arquitectura.md](docs/arquitectura.md)
 y [docs/decisiones.md](docs/decisiones.md).
 
 ## Stack
@@ -79,6 +79,23 @@ aplican en producción.
 7. **Multiempresa:** con una cuenta en varias organizaciones, cambia de organización
    desde el selector del menú lateral.
 8. **Pruebas:** `npm test` y `npm run test:db`.
+
+## Cómo probar la Fase 2
+
+Los datos demo incluyen 2 ranchos, 5 parcelas, 4 cultivos y 4 proyectos en distintos estados.
+
+1. **Dashboard:** proyectos vigentes, superficie cultivada vs. parcelada, presupuesto planeado,
+   gráficas por estado y por cultivo, próximas cosechas. Todo se calcula en SQL con los
+   registros reales.
+2. **Ranchos y parcelas:** crea un rancho con superficie total y agrégale parcelas; intenta
+   exceder la superficie (la BD lo rechaza). Desactiva o elimina parcelas sin proyectos.
+3. **Cultivos:** alta y edición de cultivos/variedades; un cultivo con proyectos no se elimina,
+   solo se desactiva.
+4. **Proyectos:** *Nuevo proyecto* → se asigna folio y queda en Planeación. En el expediente
+   asigna parcelas (solo se ofrece la superficie libre), cambia de estado y revisa el historial.
+   Cancelar exige motivo y libera la superficie; reabrir solo lo hace propietario/administrador.
+5. **Permisos:** como `agronomo@…` puedes crear y editar pero no eliminar; como `campo@…` o
+   `consulta@…` todo es de solo lectura.
 
 ## Seguridad
 

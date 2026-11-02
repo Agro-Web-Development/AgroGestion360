@@ -43,6 +43,46 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"crops": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"cycle_days": number | null,"id": string,"is_active": boolean,"name": string,"notes": string | null,"organization_id": string,"scientific_name": string | null,"updated_at": string,"updated_by": string | null,"variety": string | null,"yield_unit": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"cycle_days"?: number | null,"id"?: string,"is_active"?: boolean,"name": string,"notes"?: string | null,"organization_id": string,"scientific_name"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"variety"?: string | null,"yield_unit"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"cycle_days"?: number | null,"id"?: string,"is_active"?: boolean,"name"?: string,"notes"?: string | null,"organization_id"?: string,"scientific_name"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"variety"?: string | null,"yield_unit"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "crops_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"farms": {
+                  Row: {
+                    "address": string | null,"code": string | null,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"latitude": number | null,"longitude": number | null,"municipality": string | null,"name": string,"notes": string | null,"organization_id": string,"state": string | null,"total_area_ha": number | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"municipality"?: string | null,"name": string,"notes"?: string | null,"organization_id": string,"state"?: string | null,"total_area_ha"?: number | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "address"?: string | null,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"latitude"?: number | null,"longitude"?: number | null,"municipality"?: string | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"state"?: string | null,"total_area_ha"?: number | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "farms_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"invitations": {
                   Row: {
                     "accepted_at": string | null,"created_at": string,"created_by": string | null,"email": string,"expires_at": string,"id": string,"organization_id": string,"role": Database["public"]['Enums']["app_role"],"status": Database["public"]['Enums']["invitation_status"],"updated_at": string,"updated_by": string | null
@@ -89,6 +129,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"organization_counters": {
+                  Row: {
+                    "organization_id": string,"scope": string,"value": number,"year": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "organization_id": string,"scope": string,"value"?: number,"year": number
+                  }
+                  Update: {
+                    "organization_id"?: string,"scope"?: string,"value"?: number,"year"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "organization_counters_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"organizations": {
                   Row: {
                     "address": string | null,"created_at": string,"created_by": string | null,"currency": string,"email": string | null,"id": string,"is_demo": boolean,"legal_name": string | null,"name": string,"phone": string | null,"plan": string,"rfc": string | null,"timezone": string,"updated_at": string,"updated_by": string | null
@@ -102,6 +162,32 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"plots": {
+                  Row: {
+                    "area_ha": number,"code": string | null,"created_at": string,"created_by": string | null,"farm_id": string,"id": string,"irrigation_type": Database["public"]['Enums']["irrigation_type"],"is_active": boolean,"name": string,"notes": string | null,"organization_id": string,"soil_type": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_ha": number,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"farm_id": string,"id"?: string,"irrigation_type"?: Database["public"]['Enums']["irrigation_type"],"is_active"?: boolean,"name": string,"notes"?: string | null,"organization_id": string,"soil_type"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "area_ha"?: number,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"farm_id"?: string,"id"?: string,"irrigation_type"?: Database["public"]['Enums']["irrigation_type"],"is_active"?: boolean,"name"?: string,"notes"?: string | null,"organization_id"?: string,"soil_type"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "plots_organization_id_farm_id_fkey"
+      columns: ["organization_id","farm_id"]
+isOneToOne: false
+      referencedRelation: "farms"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "plots_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"profiles": {
                   Row: {
@@ -117,6 +203,90 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"project_plots": {
+                  Row: {
+                    "assigned_area_ha": number,"created_at": string,"created_by": string | null,"id": string,"organization_id": string,"plot_id": string,"project_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assigned_area_ha": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id": string,"plot_id": string,"project_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "assigned_area_ha"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"organization_id"?: string,"plot_id"?: string,"project_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_plots_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_plots_organization_id_plot_id_fkey"
+      columns: ["organization_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "plots"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "project_plots_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"project_status_history": {
+                  Row: {
+                    "changed_at": string,"changed_by": string | null,"from_status": Database["public"]['Enums']["project_status"] | null,"id": number,"note": string | null,"organization_id": string,"project_id": string,"to_status": Database["public"]['Enums']["project_status"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "changed_at"?: string,"changed_by"?: string | null,"from_status"?: Database["public"]['Enums']["project_status"] | null,"id"?: never,"note"?: string | null,"organization_id": string,"project_id": string,"to_status": Database["public"]['Enums']["project_status"]
+                  }
+                  Update: {
+                    "changed_at"?: string,"changed_by"?: string | null,"from_status"?: Database["public"]['Enums']["project_status"] | null,"id"?: never,"note"?: string | null,"organization_id"?: string,"project_id"?: string,"to_status"?: Database["public"]['Enums']["project_status"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_status_history_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"projects": {
+                  Row: {
+                    "budget_amount": number | null,"code": string,"created_at": string,"created_by": string | null,"crop_id": string,"description": string | null,"end_date": string | null,"expected_harvest_date": string | null,"expected_yield": number | null,"id": string,"name": string,"organization_id": string,"planting_date": string | null,"responsible_id": string | null,"season": string | null,"start_date": string,"status": Database["public"]['Enums']["project_status"],"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "budget_amount"?: number | null,"code"?: string,"created_at"?: string,"created_by"?: string | null,"crop_id": string,"description"?: string | null,"end_date"?: string | null,"expected_harvest_date"?: string | null,"expected_yield"?: number | null,"id"?: string,"name": string,"organization_id": string,"planting_date"?: string | null,"responsible_id"?: string | null,"season"?: string | null,"start_date": string,"status"?: Database["public"]['Enums']["project_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "budget_amount"?: number | null,"code"?: string,"created_at"?: string,"created_by"?: string | null,"crop_id"?: string,"description"?: string | null,"end_date"?: string | null,"expected_harvest_date"?: string | null,"expected_yield"?: number | null,"id"?: string,"name"?: string,"organization_id"?: string,"planting_date"?: string | null,"responsible_id"?: string | null,"season"?: string | null,"start_date"?: string,"status"?: Database["public"]['Enums']["project_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "projects_organization_id_crop_id_fkey"
+      columns: ["organization_id","crop_id"]
+isOneToOne: false
+      referencedRelation: "crops"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "projects_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "projects_responsible_id_fkey"
+      columns: ["responsible_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -126,8 +296,14 @@ isOneToOne: false
             "cancel_invitation":
 { Args: { "p_invitation": string }; Returns: undefined
                            },
+"change_project_status":
+{ Args: { "p_note"?: string,"p_project": string,"p_status": Database["public"]['Enums']["project_status"] }; Returns: undefined
+                           },
 "create_organization":
 { Args: { "p_name": string }; Returns: string
+                           },
+"dashboard_summary":
+{ Args: { "p_org": string }; Returns: Json
                            },
 "has_role":
 { Args: { "p_org": string,"p_roles": (Database["public"]['Enums']["app_role"])[] }; Returns: boolean
@@ -137,6 +313,15 @@ isOneToOne: false
                            },
 "is_member":
 { Args: { "p_org": string }; Returns: boolean
+                           },
+"next_folio":
+{ Args: { "p_org": string,"p_prefix": string,"p_scope": string }; Returns: string
+                           },
+"plot_assigned_area":
+{ Args: { "p_exclude"?: string,"p_plot": string }; Returns: number
+                           },
+"project_transition_allowed":
+{ Args: { "p_from": Database["public"]['Enums']["project_status"],"p_to": Database["public"]['Enums']["project_status"] }; Returns: boolean
                            },
 "shares_organization":
 { Args: { "p_user": string }; Returns: boolean
@@ -149,7 +334,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","invitation_status": "pendiente"|"aceptada"|"cancelada","membership_status": "activo"|"inactivo"
+            "app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","membership_status": "activo"|"inactivo","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -269,7 +454,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"membership_status": ["activo", "inactivo"]
+            "app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"membership_status": ["activo", "inactivo"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"]
           }
         }
 } as const
