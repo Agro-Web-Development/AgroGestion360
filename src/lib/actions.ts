@@ -1,0 +1,44 @@
+import type { PostgrestError } from "@supabase/supabase-js"
+import type { z } from "zod"
+
+export type ActionResult<T = undefined> =
+  | { ok: true; data: T; message?: string }
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
+
+export function success<T>(data: T, message?: string): ActionResult<T> {
+  return { ok: true, data, message }
+}
+
+export function failure(error: string, fieldErrors?: Record<string, string[]>): ActionResult<never> {
+  return { ok: false, error, fieldErrors }
+}
+
+export function validationFailure(error: z.ZodError): ActionResult<never> {
+  const fieldErrors: Record<string, string[]> = {}
+  for (const issue of error.issues) {
+    const key = issue.path.join(".") || "_"
+    ;(fieldErrors[key] ??= []).push(issue.message)
+  }
+  return failure("Revisa los datos marcados en el formulario.", fieldErrors)
+}
+
+/** Códigos con mensaje propio (RAISE EXCEPTION en español desde las funciones SQL). */
+const PASSTHROUGH_CODES = new Set(["22023", "23505", "P0001", "P0002"])
+
+/** Traduce errores de PostgREST/PostgreSQL a mensajes claros para el usuario. */
+export function dbErrorMessage(error: Pick<PostgrestError, "code" | "message">): string {
+  if (error.code === "42501") {
+    return error.message && !error.message.startsWith("permission denied") && !error.message.includes("row-level security")
+      ? error.message
+      : "No tienes permiso para realizar esta operación."
+  }
+  if (error.code && PASSTHROUGH_CODES.has(error.code)) {
+    if (error.code === "23505" && error.message.startsWith("duplicate key")) {
+      return "Ya existe un registro con esos datos."
+    }
+    return error.message
+  }
+  if (error.code === "23503") return "El registro está relacionado con información que no existe o no puede eliminarse."
+  if (error.code === "23514") return "Algún dato no cumple las reglas de validación."
+  return "Ocurrió un error inesperado. Intenta de nuevo."
+}

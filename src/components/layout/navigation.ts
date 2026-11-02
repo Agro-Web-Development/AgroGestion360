@@ -1,0 +1,78 @@
+import {
+  BarChart3,
+  Building2,
+  ClipboardList,
+  HandCoins,
+  LayoutDashboard,
+  Leaf,
+  Map,
+  Package,
+  ReceiptText,
+  ShoppingCart,
+  Sprout,
+  Tractor,
+  UserCircle,
+  Users,
+  UsersRound,
+  Wallet,
+  Wheat,
+  type LucideIcon,
+} from "lucide-react"
+
+export type NavItem = {
+  title: string
+  href: string
+  icon: LucideIcon
+  /** Fase del plan en la que se habilita el módulo; sin valor = disponible. */
+  comingInPhase?: number
+}
+
+export type NavGroup = { label: string; items: NavItem[] }
+
+export const NAVIGATION: NavGroup[] = [
+  {
+    label: "General",
+    items: [{ title: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Producción agrícola",
+    items: [
+      { title: "Proyectos", href: "/proyectos", icon: Sprout, comingInPhase: 2 },
+      { title: "Ranchos y parcelas", href: "/parcelas", icon: Map, comingInPhase: 2 },
+      { title: "Cultivos", href: "/cultivos", icon: Leaf, comingInPhase: 2 },
+    ],
+  },
+  {
+    label: "Operación",
+    items: [
+      { title: "Inventario", href: "/inventario", icon: Package, comingInPhase: 3 },
+      { title: "Bitácoras", href: "/bitacoras", icon: ClipboardList, comingInPhase: 3 },
+      { title: "Maquinaria", href: "/maquinaria", icon: Tractor, comingInPhase: 3 },
+      { title: "Personal", href: "/personal", icon: UsersRound, comingInPhase: 3 },
+    ],
+  },
+  {
+    label: "Comercialización",
+    items: [
+      { title: "Cosechas", href: "/produccion", icon: Wheat, comingInPhase: 4 },
+      { title: "Clientes", href: "/clientes", icon: Building2, comingInPhase: 4 },
+      { title: "Ventas", href: "/ventas", icon: ShoppingCart, comingInPhase: 4 },
+      { title: "Cobranza", href: "/pagos", icon: HandCoins, comingInPhase: 4 },
+    ],
+  },
+  {
+    label: "Finanzas",
+    items: [
+      { title: "Gastos y rentabilidad", href: "/gastos", icon: Wallet, comingInPhase: 5 },
+      { title: "Reportes", href: "/reportes", icon: BarChart3, comingInPhase: 5 },
+    ],
+  },
+  {
+    label: "Configuración",
+    items: [
+      { title: "Organización", href: "/configuracion/organizacion", icon: ReceiptText },
+      { title: "Usuarios y roles", href: "/configuracion/usuarios", icon: Users },
+      { title: "Mi perfil", href: "/configuracion/perfil", icon: UserCircle },
+    ],
+  },
+]
