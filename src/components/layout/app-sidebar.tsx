@@ -27,15 +27,19 @@ export function AppSidebar({ organizationSlot }: { organizationSlot: React.React
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <Link href="/dashboard" className="px-1 py-1.5" onClick={() => isMobile && setOpenMobile(false)}>
+      <SidebarHeader className="gap-3 border-b border-sidebar-border pb-3">
+        <Link
+          href="/dashboard"
+          className="rounded-md px-1 py-1.5 outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          onClick={() => isMobile && setOpenMobile(false)}
+        >
           <Logo className="text-sidebar-foreground group-data-[collapsible=icon]:hidden" />
           <Logo compact className="hidden group-data-[collapsible=icon]:flex" />
         </Link>
         {organizationSlot}
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="gap-0 py-2">
         {/* La ruta actual solo se conoce al solicitar la página: el menú del shell
             estático se muestra sin elemento activo y se reemplaza al transmitirse. */}
         <Suspense fallback={<NavigationMenu pathname={null} />}>
@@ -43,8 +47,11 @@ export function AppSidebar({ organizationSlot }: { organizationSlot: React.React
         </Suspense>
       </SidebarContent>
 
-      <SidebarFooter className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
-        <p className="px-2">Versión 0.3 · Fases 3–5 (finanzas)</p>
+      <SidebarFooter className="border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
+        <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent/50 px-3 py-2 text-xs text-sidebar-foreground/70">
+          <span className="size-2 shrink-0 rounded-full bg-sidebar-primary" aria-hidden />
+          <span className="truncate">Versión 0.3 · Fases 3–5 (finanzas)</span>
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
@@ -60,8 +67,10 @@ function NavigationMenu({ pathname }: { pathname: string | null }) {
   return (
     <>
     {NAVIGATION.map((group) => (
-      <SidebarGroup key={group.label}>
-        <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+      <SidebarGroup key={group.label} className="py-1.5">
+        <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider text-sidebar-foreground/50 uppercase">
+          {group.label}
+        </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {group.items.map((item) => {
@@ -80,7 +89,7 @@ function NavigationMenu({ pathname }: { pathname: string | null }) {
                       <Icon aria-hidden />
                       <span>{item.title}</span>
                     </SidebarMenuButton>
-                    <SidebarMenuBadge className="text-[10px] text-sidebar-foreground/60">
+                    <SidebarMenuBadge className="rounded-full bg-sidebar-accent px-1.5 text-[10px] font-medium text-sidebar-foreground/70">
                       Pronto
                     </SidebarMenuBadge>
                   </SidebarMenuItem>
@@ -89,7 +98,12 @@ function NavigationMenu({ pathname }: { pathname: string | null }) {
 
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    tooltip={item.title}
+                    className="relative text-sidebar-foreground/85 data-active:text-sidebar-accent-foreground data-active:[&_svg]:text-sidebar-primary data-active:before:absolute data-active:before:inset-y-1.5 data-active:before:left-0 data-active:before:w-[3px] data-active:before:rounded-full data-active:before:bg-sidebar-primary group-data-[collapsible=icon]:before:hidden"
+                  >
                     <Link href={item.href} onClick={() => isMobile && setOpenMobile(false)}>
                       <Icon aria-hidden />
                       <span>{item.title}</span>

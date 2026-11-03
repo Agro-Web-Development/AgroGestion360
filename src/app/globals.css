@@ -51,41 +51,41 @@
 }
 
 :root {
-  /* AgroGestión 360 · verde oscuro institucional, verde natural, blanco y gris claro */
-  --background: oklch(0.985 0.003 145);
-  --foreground: oklch(0.2 0.02 150);
+  /* AgroGestión 360 · verde bosque institucional, verde hoja, blanco y grises neutros */
+  --background: oklch(0.977 0.004 150);
+  --foreground: oklch(0.21 0.018 155);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 150);
+  --card-foreground: oklch(0.21 0.018 155);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 150);
-  --primary: oklch(0.4 0.09 153);
-  --primary-foreground: oklch(0.985 0.005 145);
-  --secondary: oklch(0.94 0.035 140);
-  --secondary-foreground: oklch(0.3 0.07 152);
-  --muted: oklch(0.955 0.005 145);
-  --muted-foreground: oklch(0.5 0.015 150);
-  --accent: oklch(0.93 0.04 138);
-  --accent-foreground: oklch(0.3 0.07 152);
+  --popover-foreground: oklch(0.21 0.018 155);
+  --primary: oklch(0.43 0.1 152);
+  --primary-foreground: oklch(0.99 0.004 145);
+  --secondary: oklch(0.95 0.03 145);
+  --secondary-foreground: oklch(0.33 0.08 152);
+  --muted: oklch(0.962 0.005 150);
+  --muted-foreground: oklch(0.49 0.014 155);
+  --accent: oklch(0.945 0.035 142);
+  --accent-foreground: oklch(0.31 0.075 152);
   --destructive: oklch(0.577 0.215 27.3);
-  --success: oklch(0.6 0.14 145);
-  --warning: oklch(0.75 0.15 75);
-  --border: oklch(0.905 0.01 145);
-  --input: oklch(0.89 0.012 145);
-  --ring: oklch(0.55 0.12 148);
-  --chart-1: oklch(0.45 0.1 153);
-  --chart-2: oklch(0.65 0.15 140);
-  --chart-3: oklch(0.72 0.13 85);
-  --chart-4: oklch(0.55 0.08 60);
+  --success: oklch(0.6 0.14 148);
+  --warning: oklch(0.76 0.15 75);
+  --border: oklch(0.915 0.008 150);
+  --input: oklch(0.885 0.01 150);
+  --ring: oklch(0.58 0.13 148);
+  --chart-1: oklch(0.47 0.11 152);
+  --chart-2: oklch(0.68 0.15 140);
+  --chart-3: oklch(0.74 0.13 85);
+  --chart-4: oklch(0.56 0.08 60);
   --chart-5: oklch(0.6 0.09 210);
   --radius: 0.625rem;
-  --sidebar: oklch(0.29 0.06 154);
-  --sidebar-foreground: oklch(0.95 0.015 145);
-  --sidebar-primary: oklch(0.72 0.16 140);
+  --sidebar: oklch(0.265 0.055 156);
+  --sidebar-foreground: oklch(0.93 0.015 148);
+  --sidebar-primary: oklch(0.76 0.16 138);
   --sidebar-primary-foreground: oklch(0.2 0.04 150);
-  --sidebar-accent: oklch(0.36 0.07 153);
-  --sidebar-accent-foreground: oklch(0.985 0.005 145);
-  --sidebar-border: oklch(0.36 0.05 153);
-  --sidebar-ring: oklch(0.72 0.16 140);
+  --sidebar-accent: oklch(0.335 0.065 154);
+  --sidebar-accent-foreground: oklch(0.99 0.005 145);
+  --sidebar-border: oklch(0.34 0.05 155);
+  --sidebar-ring: oklch(0.76 0.16 138);
 }
 
 .dark {
@@ -130,8 +130,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
   }
   html {
     @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+  /* Barras de desplazamiento discretas en tablas y paneles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 35%, transparent) transparent;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply cursor-pointer opacity-60 hover:opacity-100 dark:invert;
   }
 }

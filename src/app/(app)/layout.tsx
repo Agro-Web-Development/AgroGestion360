@@ -26,14 +26,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
       />
       <SidebarInset>
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-          <SidebarTrigger className="-ml-1" />
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-card/90 px-3 backdrop-blur supports-backdrop-filter:bg-card/75 sm:h-16 sm:px-6">
+          <SidebarTrigger className="-ml-1 size-9" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
           <Suspense fallback={<Skeleton className="ml-auto h-8 w-48" />}>
             <TopbarSlot />
           </Suspense>
         </header>
-        <div className="flex-1 p-4 md:p-6">
+        <div className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
         </div>
       </SidebarInset>
@@ -52,10 +52,14 @@ async function OrganizationSlot() {
 async function TopbarSlot() {
   const ctx = await getOrgContext()
   return (
-    <div className="flex flex-1 items-center gap-2">
-      <span className="hidden truncate text-sm font-medium sm:inline">{ctx.organization.name}</span>
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <span className="min-w-0 truncate text-sm font-semibold">{ctx.organization.name}</span>
       {ctx.organization.isDemo && (
-        <Badge variant="secondary" title="Organización con datos ficticios de demostración">
+        <Badge
+          variant="secondary"
+          className="hidden border-primary/15 sm:inline-flex"
+          title="Organización con datos ficticios de demostración"
+        >
           Demostración
         </Badge>
       )}
@@ -69,14 +73,17 @@ async function TopbarSlot() {
 
 function PageSkeleton() {
   return (
-    <div className="space-y-4" aria-busy="true" aria-label="Cargando">
-      <Skeleton className="h-8 w-64" />
+    <div className="space-y-6" aria-busy="true" aria-label="Cargando">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-28" />
+          <Skeleton key={i} className="h-32 rounded-xl" />
         ))}
       </div>
-      <Skeleton className="h-72" />
+      <Skeleton className="h-80 rounded-xl" />
     </div>
   )
 }

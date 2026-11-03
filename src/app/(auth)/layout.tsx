@@ -15,7 +15,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="flex flex-col gap-6 p-6 md:p-10">
         <Logo className="text-lg" />
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm">{children}</div>
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm sm:p-8 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+            {children}
+          </div>
         </div>
         <p className="text-center text-xs text-muted-foreground">
           AgroGestión 360 · Hecho para el campo mexicano
@@ -26,14 +28,22 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-20 [background:repeating-linear-gradient(115deg,transparent_0_38px,var(--sidebar-primary)_38px_40px)]"
         />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-32 -bottom-32 size-96 rounded-full bg-sidebar-primary/20 blur-3xl"
+        />
         <div className="relative max-w-md space-y-8">
+          <span className="inline-flex items-center gap-2 rounded-full border border-sidebar-border bg-sidebar-accent/60 px-3 py-1 text-xs font-medium text-sidebar-foreground/80">
+            <span className="size-1.5 rounded-full bg-sidebar-primary" aria-hidden />
+            Gestión agrícola integral
+          </span>
           <h2 className="text-3xl font-semibold leading-tight text-balance">
             Del cultivo a la cobranza, todo tu proyecto agrícola en un solo lugar.
           </h2>
           <ul className="space-y-4">
             {HIGHLIGHTS.map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-sidebar-accent">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sidebar-accent ring-1 ring-sidebar-border">
                   <Icon className="size-5 text-sidebar-primary" aria-hidden />
                 </span>
                 <span className="text-sidebar-foreground/90">{text}</span>
