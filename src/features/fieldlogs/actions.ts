@@ -13,7 +13,9 @@ import {
   applicationSchema,
   applicationUpdateSchema,
   ATTACHMENT_ENTITIES,
+  ATTACHMENT_PERMISSION,
   attachmentFileSchema,
+  attachmentTypes,
   FIELD_RECORD_KINDS,
   irrigationSchema,
   MAX_ATTACHMENTS_PER_UPLOAD,
@@ -306,7 +308,14 @@ export async function deleteActivityType(typeId: string): Promise<ActionResult> 
 // -----------------------------------------------------------------------------
 const entitySchema = z.enum(ATTACHMENT_ENTITIES)
 
-export type AttachmentView = { id: string; name: string; url: string | null; createdAt: string; canDelete: boolean }
+export type AttachmentView = {
+  id: string
+  name: string
+  mimeType: string
+  url: string | null
+  createdAt: string
+  canDelete: boolean
+}
 
 export async function registerAttachments(
   entity: AttachmentEntity,
@@ -314,11 +323,22 @@ export async function registerAttachments(
   files: AttachmentFile[]
 ): Promise<ActionResult> {
   if (!entitySchema.safeParse(entity).success || !idSchema.safeParse(entityId).success) return failure("Registro no válido.")
-  const parsed = z.array(attachmentFileSchema).min(1).max(MAX_ATTACHMENTS_PER_UPLOAD).safeParse(files)
-  if (!parsed.success) return failure("Revisa las fotografías: solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB.")
+  const parsed = z
+    .array(attachmentFileSchema)
+    .min(1)
+    .max(MAX_ATTACHMENTS_PER_UPLOAD)
+    .refine((list) => list.every((f) => attachmentTypes(entity).includes(f.type)))
+    .safeParse(files)
+  if (!parsed.success) {
+    return failure(
+      entity === "payment"
+        ? "Revisa los comprobantes: imágenes o PDF de hasta 10 MB."
+        : "Revisa las fotografías: solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB."
+    )
+  }
 
   const ctx = await getOrgContext()
-  if (!can(ctx.role, "fieldlogs.write")) return failure("No tienes permiso para agregar evidencias.")
+  if (!can(ctx.role, ATTACHMENT_PERMISSION[entity])) return failure("No tienes permiso para agregar evidencias.")
 
   const supabase = await createClient()
   const { error } = await supabase.from("attachments").insert(
@@ -339,7 +359,8 @@ export async function registerAttachments(
   }
 
   refresh()
-  return success(undefined, parsed.data.length === 1 ? "Fotografía agregada." : `${parsed.data.length} fotografías agregadas.`)
+  const noun = entity === "payment" ? ["Comprobante agregado.", "comprobantes agregados."] : ["Fotografía agregada.", "fotografías agregadas."]
+  return success(undefined, parsed.data.length === 1 ? noun[0] : `${parsed.data.length} ${noun[1]}`)
 }
 
 export async function listAttachments(entity: AttachmentEntity, entityId: string): Promise<ActionResult<AttachmentView[]>> {
@@ -348,7 +369,7 @@ export async function listAttachments(entity: AttachmentEntity, entityId: string
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("attachments")
-    .select("id, file_name, storage_path, created_at, created_by")
+    .select("id, file_name, mime_type, storage_path, created_at, created_by")
     .eq("organization_id", ctx.organization.id)
     .eq("entity_type", entity)
     .eq("entity_id", entityId)
@@ -366,9 +387,11 @@ export async function listAttachments(entity: AttachmentEntity, entityId: string
     data.map((a) => ({
       id: a.id,
       name: a.file_name,
+      mimeType: a.mime_type,
       url: urls.get(a.storage_path) ?? null,
       createdAt: a.created_at,
-      canDelete: admin || (a.created_by === ctx.user.id && can(ctx.role, "fieldlogs.write")),
+      // Un comprobante de pago solo lo retira propietario o administrador (igual que la RLS).
+      canDelete: admin || (entity !== "payment" && a.created_by === ctx.user.id && can(ctx.role, ATTACHMENT_PERMISSION[entity])),
     }))
   )
 }
@@ -388,5 +411,5 @@ export async function deleteAttachment(attachmentId: string): Promise<ActionResu
   await supabase.storage.from(BUCKET).remove(data.map((a) => a.storage_path))
 
   refresh()
-  return success(undefined, "Fotografía eliminada.")
+  return success(undefined, "Evidencia eliminada.")
 }

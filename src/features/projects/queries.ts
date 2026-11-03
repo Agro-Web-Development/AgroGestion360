@@ -107,7 +107,9 @@ export async function getOpenProjects(statuses?: ProjectStatus[]) {
   const supabase = await createClient()
   let query = supabase
     .from("projects")
-    .select("id, code, name, status, start_date, project_plots(plot:plots!inner(id, name, farm:farms!inner(name)))")
+    .select(
+      "id, code, name, status, start_date, crop:crops!inner(name, variety), project_plots(assigned_area_ha, plot:plots!inner(id, name, farm:farms!inner(name)))"
+    )
     .eq("organization_id", ctx.organization.id)
     .not("status", "in", "(cerrado,cancelado)")
     .order("code")
@@ -117,7 +119,7 @@ export async function getOpenProjects(statuses?: ProjectStatus[]) {
   return data.map(({ project_plots, ...p }) => ({
     ...p,
     plots: project_plots
-      .map((pp) => ({ id: pp.plot.id, name: pp.plot.name, farm: pp.plot.farm.name }))
+      .map((pp) => ({ id: pp.plot.id, name: pp.plot.name, farm: pp.plot.farm.name, areaHa: Number(pp.assigned_area_ha) }))
       .sort((a, b) => a.farm.localeCompare(b.farm, "es") || a.name.localeCompare(b.name, "es")),
   }))
 }

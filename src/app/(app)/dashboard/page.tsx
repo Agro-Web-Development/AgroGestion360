@@ -56,7 +56,12 @@ const TABLE_LABELS: Record<string, string> = {
   employees: "Empleado",
   labor_records: "Mano de obra",
   project_expenses: "Gasto",
-  harvests: "Cosecha",
+  harvests: "Corte / lote",
+  production_movements: "Movimiento de producto",
+  sale_deliveries: "Entrega",
+  sale_delivery_items: "Partida entregada",
+  advance_applications: "Aplicación de anticipo",
+  attachments: "Evidencia",
   customers: "Cliente",
   sales: "Venta",
   sale_items: "Partida de venta",
@@ -299,6 +304,9 @@ export default async function DashboardPage() {
             title="Indicadores financieros y comerciales"
             description="Ventas registradas y dinero efectivamente cobrado se muestran por separado; el cobro no es utilidad."
           />
+          <div className="-mt-2 mb-4">
+            <ViewAll href="/comercial" label="Abrir dashboard comercial" />
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
               label="Inversión acumulada"
@@ -322,7 +330,7 @@ export default async function DashboardPage() {
             <KpiCard
               label="Ventas registradas"
               value={formatMoney(finance.sales_total)}
-              hint={`${formatNumber(finance.sales_count)} ventas vigentes`}
+              hint={`${formatNumber(finance.sales_count)} ventas confirmadas`}
               icon={ShoppingCart}
             />
             <KpiCard

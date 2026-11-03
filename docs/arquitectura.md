@@ -38,8 +38,9 @@ src/
       maquinaria/      uso, equipos, mantenimiento
       personal/        jornadas, asistencia, cuadrillas, asignaciones, empleados
       reportes/        reportes operativos con exportación CSV
-      produccion/
-      clientes/ ventas/ (nueva, [id]) pagos/ gastos/
+      produccion/      indicadores, cortes, inventario de producto, movimientos; lotes/[id] (trazabilidad)
+      comercial/       dashboard comercial (filtros de fechas, cultivo y proyecto)
+      clientes/ ([id] expediente) ventas/ (nueva, [id], [id]/editar) pagos/ gastos/
       configuracion/   organizacion, usuarios, perfil
     auth/callback/     intercambio de código PKCE / token_hash
     auth/aceptar/      aceptación de invitaciones (tokens en el fragmento)
@@ -51,7 +52,8 @@ src/
     shared/            KpiCard, ConfirmAction, ReasonDialog, FilterBar (filtros en la URL), UrlTabs,
                        SearchInput, CatalogRowActions
   features/<módulo>/   schemas.ts (Zod) · actions.ts · queries.ts · components/
-                       (fieldlogs = bitácoras y evidencias; reports = agregaciones puras y CSV)
+                       (fieldlogs = bitácoras y evidencias; reports = agregaciones puras y CSV;
+                       harvests = cortes, lotes e inventario de producto; commercial = dashboard comercial)
   lib/
     supabase/          client, server, proxy, admin (server-only)
     auth/              roles.ts (matriz de permisos), session.ts (DAL)
@@ -278,12 +280,78 @@ aplicaciones, jornadas, costos de mano de obra, utilización de maquinaria y cos
 y proyecto en el servidor (máximo 5,000 registros por reporte), se agregan con funciones puras
 (`features/reports/aggregate.ts`, con pruebas) y se exportan a CSV.
 
+### Implementado (Fase 4 · producción y comercialización)
+
+Migraciones `20261103040000_commercial_enums.sql` (estados de venta; `vigente` se renombra a `confirmada`) y
+`20261103040100_commercial.sql`. Se **amplían** cosechas, clientes, ventas y pagos existentes; no hay tablas paralelas.
+
+| Tabla / vista            | Propósito                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| harvests (ampliada)      | Cada corte por calidad es un **lote**: folio `LOT-AAAA-0001`, número de corte, unidad (kg, t, caja, saco, arpilla, reja) con peso por empaque, clasificación, responsable, `sold_kg`, `adjusted_kg` y `available_kg` (generada). |
+| production_movements     | Libro **inmutable** del producto por lote: venta, cancelación de venta, merma, pérdida, ajustes y reverso de ajuste, con signo, existencia posterior, venta/partida ligada y motivo. |
+| customers (ampliada)     | `customer_type` (mayorista, minorista, empacadora, exportadora, industria, intermediario, otro). |
+| sales (ampliada)         | Estados `borrador → confirmada → entregada`, `parcialmente_pagada`, `pagada`, `cancelada`; subtotal, descuento, total, `advance_balance`, fecha de entrega programada, confirmación (fecha y usuario). |
+| sale_items (ampliada)    | Lote (`harvest_id`), unidad, cantidad, kg por unidad, precio por unidad, descuento, `gross_amount`/`amount` generados y cantidad entregada. |
+| sale_deliveries · sale_delivery_items | Entregas parciales por partida; se cancelan con motivo.                          |
+| payments (ampliada)      | `kind` (`pago` / `anticipo`) y `applied_amount` del anticipo.                                  |
+| advance_applications     | Aplicación explícita (total o parcial) de un anticipo al saldo; se revierte con motivo.       |
+| attachments (ampliada)   | Evidencias de cortes (`harvest`) y comprobantes de pago (`payment`, imagen o PDF).            |
+| v_sale_balances          | Saldo, estado de pago y de entrega, días vencidos, % de recuperación, último pago, kg.         |
+| v_sale_lot_trace         | Trazabilidad venta ↔ partida ↔ lote ↔ parcela ↔ proyecto (incluye salidas revertidas).          |
+| v_project_costs          | Agrega `shrinkage_kg`, `lots`, `cuts`; lo vendido cuenta desde la confirmación y el disponible sale de los lotes. |
+| v_project_timeline       | Agrega los cortes (`cosecha`) a la cronología del proyecto.                                   |
+
+RPC (transaccionales, `SECURITY DEFINER`, verifican rol, idempotentes por id del cliente):
+
+| Función                          | Qué hace                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `save_sale`                      | Crea o modifica un borrador (encabezado + partidas por lote) y, con `p_confirm`, lo confirma en la misma transacción. |
+| `confirm_sale`                   | Bloquea venta → lotes (en orden de id) → proyectos; verifica existencias y descuenta cada partida de su lote. |
+| `cancel_sale`                    | Borrador o venta sin pagos ni anticipos; revierte cada salida con `cancelacion_venta` (una sola vez). |
+| `register_delivery` · `cancel_delivery` | Entrega total o parcial por partida (hasta lo pendiente) y su cancelación.        |
+| `register_payment`               | Pago o anticipo; nunca excede total − pagado − anticipos sin aplicar. Un borrador solo recibe anticipos. |
+| `apply_advance` · `cancel_advance_application` | Mecanismo explícito para que un anticipo cuente como pagado, y su reversión. |
+| `cancel_payment`                 | Cancela (no elimina) un pago o anticipo; un anticipo con aplicaciones primero se desaplica. |
+| `register_production_adjustment` · `reverse_production_adjustment` | Mermas, pérdidas y ajustes justificados; reversión con contrapartida. |
+| `commercial_summary`             | Indicadores y series del dashboard comercial (`SECURITY INVOKER`).                         |
+
+Internas: `post_production_movement` (único punto que modifica existencias de lotes), `confirm_sale_internal`,
+`refresh_sale_status`, `parse_sale_lines`, triggers `before_harvest_write` / `before_harvest_delete`.
+
+Reglas en base de datos:
+
+- **Existencias por lote:** `harvests_available_check` impide que un lote quede negativo aunque una función omitiera la
+  validación. Las salidas por venta solo ocurren al confirmar; un borrador no aparta producto.
+- **Concurrencia:** orden de bloqueo fijo venta → lotes (`FOR UPDATE`, por id) → proyecto (`FOR UPDATE`). Editar un corte
+  bloquea el lote y luego el proyecto (mismo orden). Dos confirmaciones simultáneas del mismo lote se serializan y la
+  segunda falla con el disponible actualizado (verificado con dos sesiones concurrentes).
+- **Lote con historial:** con ventas o ajustes no se elimina ni cambia proyecto, parcela, fecha o calidad; su cantidad no
+  baja de lo vendido y ajustado. Un proyecto cerrado congela sus lotes (sin ventas ni ajustes).
+- **Estados de venta:** `refresh_sale_status` los deriva de cobro y entrega (pagada > parcialmente pagada > entregada >
+  confirmada). El estado de entrega se expone aparte en `v_sale_balances`.
+- **Pagos:** nunca se eliminan (sin `DELETE`); cancelar restituye el saldo. Los comprobantes de pago solo los ven y
+  agregan los roles financieros (RLS de `attachments` y de Storage por la segunda carpeta de la ruta) y solo los retira
+  propietario o administrador.
+- **Datos existentes:** la migración asignó folios de lote y números de corte, y descontó las ventas confirmadas de los
+  lotes del mismo proyecto (primero la misma calidad, el más antiguo primero), registrando sus movimientos.
+
+**Acceso:** el libro de producto (kg) lo leen todos los miembros; mermas y ajustes los registran propietario,
+administrador, agrónomo, supervisor y almacén (`produce.adjust`). Ventas, entregas, pagos, anticipos, trazabilidad
+comercial y dashboard comercial: lectura `finance.read`, escritura `sales.write` / `payments.write`.
+
+**Indicadores:** `/produccion` agrega con funciones puras (`features/harvests/aggregate.ts`) los cortes del periodo
+(cortes, lotes, producción por parcela, fecha y calidad, rendimiento por hectárea, vendido, mermas, disponible).
+`/comercial` usa `commercial_summary`: flujos del periodo (producción por fecha de corte, ventas por fecha de venta,
+cobros por fecha de pago o de aplicación del anticipo) y saldos al día; con filtro de cultivo o proyecto, cada venta
+participa con sus partidas de ese filtro y su cobro y saldo se prorratean en la misma proporción.
+
 ### Pendiente
 
 - Presupuestos por categoría (`project_budgets`) y reportes en XLSX/PDF.
 - Inventario: costo PEPS por lote, devoluciones a proveedor, conteos físicos programados.
 - Edición de registros de costo (uso de maquinaria y jornadas) en lugar de eliminar y volver a capturar.
-- Ventas: anticipos sin venta, notas de crédito y CFDI.
+- Ventas: anticipos sin venta, notas de crédito, devoluciones parciales de producto y CFDI.
+- Inventario de producto por almacén o cámara fría (hoy la existencia es por lote).
 
 ## Roadmap
 
@@ -291,6 +359,7 @@ y proyecto en el servidor (máximo 5,000 registros por reporte), se agregan con 
 2. ✅ Dashboard con indicadores reales, ranchos, parcelas, cultivos, proyectos y expediente.
 3. ✅ Control operativo: inventario con almacenes, lotes y transferencias; bitácoras de riego, aplicaciones y
    actividades con evidencias; maquinaria con mantenimiento; personal con asistencia y cuadrillas; reportes.
-4. ✅ Cortes de producción, clientes, ventas, pagos, cuentas por cobrar.
+4. ✅ Cortes y lotes de producción, inventario de producto con mermas, clientes, ventas con borrador y entregas,
+   pagos y anticipos, cuentas por cobrar, trazabilidad por lote y dashboard comercial.
 5. ✅ Gastos, costos, rentabilidad · ⏳ presupuestos por categoría, reportes XLSX/PDF.
 6. PWA, captura sin conexión con sincronización, pruebas E2E, endurecimiento y despliegue.

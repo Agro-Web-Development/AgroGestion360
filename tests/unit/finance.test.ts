@@ -7,7 +7,7 @@ import { movementSchema } from "@/features/inventory/schemas"
 import { laborSchema } from "@/features/labor/schemas"
 import { usageSchema } from "@/features/machinery/schemas"
 import { agingBucket } from "@/features/sales/aging"
-import { lineAmount, paymentSchema, saleSchema } from "@/features/sales/schemas"
+import { lineGross, paymentSchema, saleSchema } from "@/features/sales/schemas"
 import { isDuplicateId } from "@/lib/actions"
 import { can } from "@/lib/auth/roles"
 import { todayISO } from "@/lib/format"
@@ -145,10 +145,24 @@ describe("gastos y cosechas", () => {
   })
 
   it("una cosecha exige parcela y peso positivo", () => {
-    const harvest = { id: UUID, projectId: UUID, plotId: UUID, date: TODAY, quality: "primera", quantityKg: "42000", packages: "", notes: "" } as const
+    const harvest = {
+      id: UUID,
+      projectId: UUID,
+      plotId: UUID,
+      date: TODAY,
+      cutNumber: "",
+      quality: "primera",
+      classification: "",
+      unit: "kg",
+      quantity: "42000",
+      unitWeightKg: "",
+      packages: "",
+      responsibleId: NONE,
+      notes: "",
+    } as const
     expect(harvestSchema.safeParse(harvest).success).toBe(true)
     expect(harvestSchema.safeParse({ ...harvest, plotId: "" }).success).toBe(false)
-    expect(harvestSchema.safeParse({ ...harvest, quantityKg: "0" }).success).toBe(false)
+    expect(harvestSchema.safeParse({ ...harvest, quantity: "0" }).success).toBe(false)
   })
 })
 
@@ -158,13 +172,14 @@ describe("ventas y cobranza", () => {
     customerId: UUID,
     saleDate: TODAY,
     dueDate: "",
+    deliveryDate: "",
     notes: "",
-    items: [{ projectId: UUID, description: "Brócoli", quality: NONE, quantityKg: "1000", unitPrice: "9.8" }],
+    items: [{ harvestId: UUID, description: "", unit: "kg", quantity: "1000", unitWeightKg: "", unitPrice: "9.8", discount: "" }],
   }
 
-  it("valida partidas y convierte la calidad vacía en null", () => {
+  it("valida partidas y convierte los opcionales vacíos en null o cero", () => {
     const r = saleSchema.parse(sale)
-    expect(r.items[0]).toMatchObject({ quality: null, quantityKg: 1000, unitPrice: 9.8 })
+    expect(r.items[0]).toMatchObject({ description: null, quantity: 1000, unitPrice: 9.8, discount: 0 })
     expect(r.dueDate).toBeNull()
     expect(saleSchema.safeParse({ ...sale, items: [] }).success).toBe(false)
     expect(saleSchema.safeParse({ ...sale, items: [{ ...sale.items[0], unitPrice: "0" }] }).success).toBe(false)
@@ -175,13 +190,13 @@ describe("ventas y cobranza", () => {
   })
 
   it("el importe de la partida se redondea a centavos como en la BD", () => {
-    expect(lineAmount(1000, 9.8)).toBe(9800)
-    expect(lineAmount(333.333, 1.115)).toBe(371.67)
-    expect(lineAmount(0.1, 0.2)).toBe(0.02)
+    expect(lineGross(1000, 9.8)).toBe(9800)
+    expect(lineGross(333.333, 1.115)).toBe(371.67)
+    expect(lineGross(0.1, 0.2)).toBe(0.02)
   })
 
   it("un pago exige importe positivo con 2 decimales", () => {
-    const payment = { id: UUID, saleId: UUID, date: TODAY, amount: "100.50", method: "efectivo", reference: "", notes: "" } as const
+    const payment = { id: UUID, saleId: UUID, kind: "pago", date: TODAY, amount: "100.50", method: "efectivo", reference: "", notes: "" } as const
     expect(paymentSchema.safeParse(payment).success).toBe(true)
     expect(paymentSchema.safeParse({ ...payment, amount: "0" }).success).toBe(false)
     expect(paymentSchema.safeParse({ ...payment, amount: "10.555" }).success).toBe(false)
@@ -196,7 +211,7 @@ describe("ventas y cobranza", () => {
   })
 
   it("valida RFC y días de crédito del cliente", () => {
-    const customer = { name: "Exportadora", rfc: "", contactName: "", phone: "", email: "", address: "", creditDays: "", notes: "" }
+    const customer = { name: "Exportadora", customerType: "exportadora", rfc: "", contactName: "", phone: "", email: "", address: "", creditDays: "", notes: "" }
     expect(customerSchema.parse(customer).creditDays).toBe(0)
     expect(customerSchema.parse({ ...customer, rfc: "ehb120415kq3" }).rfc).toBe("EHB120415KQ3")
     expect(customerSchema.safeParse({ ...customer, rfc: "XYZ" }).success).toBe(false)

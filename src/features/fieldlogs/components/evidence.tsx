@@ -1,6 +1,6 @@
 "use client"
 
-import { Camera, ImagePlus, Loader2, Trash2, X } from "lucide-react"
+import { Camera, FileText, ImagePlus, Loader2, Paperclip, Trash2, X } from "lucide-react"
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -13,19 +13,23 @@ import { newId } from "@/lib/ids"
 import { createClient } from "@/lib/supabase/client"
 import { deleteAttachment, listAttachments, registerAttachments, type AttachmentView } from "../actions"
 import {
-  ATTACHMENT_TYPES,
   attachmentPath,
+  attachmentTypes,
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENTS_PER_UPLOAD,
   type AttachmentEntity,
+  type AttachmentMime,
 } from "../schemas"
 
-const ACCEPT = ATTACHMENT_TYPES.join(",")
+const isReceipt = (entity: AttachmentEntity) => entity === "payment"
 
-function validFiles(files: File[]): { ok: File[]; rejected: number } {
-  const ok = files.filter(
-    (f) => (ATTACHMENT_TYPES as readonly string[]).includes(f.type) && f.size > 0 && f.size <= MAX_ATTACHMENT_BYTES
-  )
+function rejectedMessage(entity: AttachmentEntity) {
+  return isReceipt(entity) ? "Solo imágenes o PDF de hasta 10 MB." : "Solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB."
+}
+
+function validFiles(files: File[], entity: AttachmentEntity): { ok: File[]; rejected: number } {
+  const types: readonly string[] = attachmentTypes(entity)
+  const ok = files.filter((f) => types.includes(f.type) && f.size > 0 && f.size <= MAX_ATTACHMENT_BYTES)
   return { ok: ok.slice(0, MAX_ATTACHMENTS_PER_UPLOAD), rejected: files.length - ok.length }
 }
 
@@ -42,15 +46,15 @@ export async function uploadEvidence(
 ): Promise<boolean> {
   if (files.length === 0) return true
   const supabase = createClient()
-  const uploaded: { path: string; name: string; type: (typeof ATTACHMENT_TYPES)[number]; size: number }[] = []
+  const uploaded: { path: string; name: string; type: AttachmentMime; size: number }[] = []
   for (const file of files) {
     const path = attachmentPath(organizationId, entity, entityId, newId(), file.name)
     const { error } = await supabase.storage.from("evidencias").upload(path, file, { contentType: file.type, upsert: false })
     if (error) {
-      toast.error(`No se pudo subir "${file.name}". Puedes agregarla después desde Evidencias.`)
+      toast.error(`No se pudo subir "${file.name}". Puedes agregarlo después desde Evidencias.`)
       continue
     }
-    uploaded.push({ path, name: file.name.slice(0, 200), type: file.type as (typeof ATTACHMENT_TYPES)[number], size: file.size })
+    uploaded.push({ path, name: file.name.slice(0, 200), type: file.type as AttachmentMime, size: file.size })
   }
   if (uploaded.length === 0) return false
   const result = await registerAttachments(entity, entityId, uploaded)
@@ -62,21 +66,39 @@ export async function uploadEvidence(
   return uploaded.length === files.length
 }
 
-/** Selector de fotografías con vista previa (cámara en celulares). */
-export function PhotoInput({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
+/**
+ * Selector de fotografías con vista previa (cámara en celulares). Para pagos
+ * acepta también comprobantes en PDF.
+ */
+export function PhotoInput({
+  files,
+  onChange,
+  entity,
+}: {
+  files: File[]
+  onChange: (files: File[]) => void
+  entity?: AttachmentEntity
+}) {
   const id = useId()
+  const receipt = entity !== undefined && isReceipt(entity)
   // Las URL locales (blob:) se liberan cuando cambia la selección o se cierra el formulario.
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews])
 
   return (
     <div className="grid gap-2 sm:col-span-2">
-      <Label htmlFor={id}>Fotografías (opcional)</Label>
+      <Label htmlFor={id}>{receipt ? "Comprobante (opcional)" : "Fotografías (opcional)"}</Label>
       <div className="flex flex-wrap items-center gap-2">
         {previews.map((src, i) => (
           <div key={src} className="relative size-16 overflow-hidden rounded-md border">
-            {/* eslint-disable-next-line @next/next/no-img-element -- vista previa local (blob:) */}
-            <img src={src} alt={files[i]?.name ?? "Fotografía"} className="size-full object-cover" />
+            {files[i]?.type === "application/pdf" ? (
+              <span className="flex size-full items-center justify-center bg-muted" title={files[i].name}>
+                <FileText className="size-6 text-muted-foreground" aria-label={files[i].name} />
+              </span>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- vista previa local (blob:)
+              <img src={src} alt={files[i]?.name ?? "Fotografía"} className="size-full object-cover" />
+            )}
             <button
               type="button"
               className="absolute top-0.5 right-0.5 rounded-full bg-background/90 p-0.5"
@@ -92,26 +114,28 @@ export function PhotoInput({ files, onChange }: { files: File[]; onChange: (file
             htmlFor={id}
             className="flex size-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border border-dashed text-xs text-muted-foreground hover:bg-muted"
           >
-            <Camera className="size-4" aria-hidden />
+            {receipt ? <Paperclip className="size-4" aria-hidden /> : <Camera className="size-4" aria-hidden />}
             Agregar
           </label>
         )}
         <input
           id={id}
           type="file"
-          accept={ACCEPT}
-          capture="environment"
+          accept={attachmentTypes(entity ?? "harvest").join(",")}
+          capture={receipt ? undefined : "environment"}
           multiple
           className="sr-only"
           onChange={(e) => {
-            const { ok, rejected } = validFiles([...files, ...Array.from(e.target.files ?? [])])
-            if (rejected > 0) toast.error("Solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB.")
+            const { ok, rejected } = validFiles([...files, ...Array.from(e.target.files ?? [])], entity ?? "harvest")
+            if (rejected > 0) toast.error(rejectedMessage(entity ?? "harvest"))
             onChange(ok)
             e.target.value = ""
           }}
         />
       </div>
-      <p className="text-xs text-muted-foreground">Hasta {MAX_ATTACHMENTS_PER_UPLOAD} imágenes de 10 MB. Se suben al guardar.</p>
+      <p className="text-xs text-muted-foreground">
+        Hasta {MAX_ATTACHMENTS_PER_UPLOAD} {receipt ? "archivos (imagen o PDF)" : "imágenes"} de 10 MB. Se suben al guardar.
+      </p>
     </div>
   )
 }
@@ -152,13 +176,13 @@ export function EvidenceDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`Evidencias: ${title}`}>
-          <Camera aria-hidden />
+        <Button variant="ghost" size="icon" aria-label={`${isReceipt(entity) ? "Comprobantes" : "Evidencias"}: ${title}`}>
+          {isReceipt(entity) ? <Paperclip aria-hidden /> : <Camera aria-hidden />}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Evidencias</DialogTitle>
+          <DialogTitle>{isReceipt(entity) ? "Comprobantes" : "Evidencias"}</DialogTitle>
           <DialogDescription>{title}</DialogDescription>
         </DialogHeader>
         {loading && items === null ? (
@@ -166,15 +190,24 @@ export function EvidenceDialog({
             <Loader2 className="size-4 animate-spin" aria-hidden /> Cargando…
           </p>
         ) : items?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin fotografías registradas.</p>
+          <p className="text-sm text-muted-foreground">
+            {isReceipt(entity) ? "Sin comprobantes adjuntos." : "Sin fotografías registradas."}
+          </p>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {items?.map((a) => (
               <li key={a.id} className="space-y-1">
                 <a href={a.url ?? undefined} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-md border bg-muted">
-                  {a.url && (
-                    // eslint-disable-next-line @next/next/no-img-element -- URL firmada y temporal de Storage
-                    <img src={a.url} alt={a.name} className="size-full object-cover" loading="lazy" />
+                  {a.url && a.mimeType === "application/pdf" ? (
+                    <span className="flex size-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-muted-foreground">
+                      <FileText className="size-8" aria-hidden />
+                      <span className="line-clamp-2 break-all">{a.name}</span>
+                    </span>
+                  ) : (
+                    a.url && (
+                      // eslint-disable-next-line @next/next/no-img-element -- URL firmada y temporal de Storage
+                      <img src={a.url} alt={a.name} className="size-full object-cover" loading="lazy" />
+                    )
                   )}
                 </a>
                 <div className="flex items-start justify-between gap-1">
@@ -183,7 +216,7 @@ export function EvidenceDialog({
                   </p>
                   {a.canDelete && (
                     <ConfirmAction
-                      title="Eliminar fotografía"
+                      title="Eliminar evidencia"
                       description={`Se eliminará "${a.name}" de forma permanente.`}
                       confirmLabel="Eliminar"
                       action={async () => {
@@ -208,14 +241,14 @@ export function EvidenceDialog({
             <input
               ref={inputRef}
               type="file"
-              accept={ACCEPT}
-              capture="environment"
+              accept={attachmentTypes(entity).join(",")}
+              capture={isReceipt(entity) ? undefined : "environment"}
               multiple
               className="sr-only"
               onChange={async (e) => {
-                const { ok, rejected } = validFiles(Array.from(e.target.files ?? []))
+                const { ok, rejected } = validFiles(Array.from(e.target.files ?? []), entity)
                 e.target.value = ""
-                if (rejected > 0) toast.error("Solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB.")
+                if (rejected > 0) toast.error(rejectedMessage(entity))
                 if (ok.length === 0) return
                 setUploading(true)
                 await uploadEvidence(organizationId, entity, entityId, ok)
@@ -224,7 +257,8 @@ export function EvidenceDialog({
               }}
             />
             <Button variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()}>
-              {uploading ? <Loader2 className="animate-spin" aria-hidden /> : <ImagePlus aria-hidden />} Agregar fotografías
+              {uploading ? <Loader2 className="animate-spin" aria-hidden /> : <ImagePlus aria-hidden />}{" "}
+              {isReceipt(entity) ? "Adjuntar comprobante" : "Agregar fotografías"}
             </Button>
           </div>
         )}

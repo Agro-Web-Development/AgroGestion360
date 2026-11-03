@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  ChartColumnBig,
   ClipboardList,
   HandCoins,
   LayoutDashboard,
@@ -54,7 +55,8 @@ export const NAVIGATION: NavGroup[] = [
   {
     label: "Comercialización",
     items: [
-      { title: "Cosechas", href: "/produccion", icon: Wheat },
+      { title: "Dashboard comercial", href: "/comercial", icon: ChartColumnBig },
+      { title: "Producción", href: "/produccion", icon: Wheat },
       { title: "Clientes", href: "/clientes", icon: Building2 },
       { title: "Ventas", href: "/ventas", icon: ShoppingCart },
       { title: "Cobranza", href: "/pagos", icon: HandCoins },

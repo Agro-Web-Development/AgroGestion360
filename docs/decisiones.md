@@ -53,6 +53,17 @@
 | 49 | Evidencias: el navegador sube directo a Storage (bucket privado) y el servidor registra el archivo; se muestran con URL firmada de 30 min. | Evita el límite de tamaño de las Server Actions; la RLS de Storage valida organización y rol por la ruta y la BD verifica que el archivo exista. Las fotos se suben después de guardar el registro, para que una mala conexión no impida capturar la bitácora. |
 | 50 | Filtros de periodo y proyecto en la URL (`next/form`), validados en el servidor; la pestaña activa también va en la URL. | Las consultas traen solo el periodo pedido, la vista se puede compartir o recargar y los parámetros nunca llegan sin validar a PostgREST. |
 | 51 | Reportes operativos sin gastos directos ni ventas, visibles para todos los miembros; exportación CSV. | Todo lo que agregan lo pueden leer todos los roles por RLS, así que no hay totales parciales (decisión 33). XLSX/PDF quedan para la Fase 5. |
+| 52 | Cada corte por calidad **es** el lote de producción (`harvests` ampliada), no una tabla `production_lots` aparte. | Un lote repetiría proyecto, parcela, cultivo, fecha, calidad y cantidad del corte. Dos calidades de un mismo corte son dos lotes con el mismo número de corte. |
+| 53 | Existencia de producto en **kg**; cortes y ventas se capturan en kg, t o empaques con su peso neto. | Mantiene la base común de costo por kg y disponible (decisión 31) sin impedir vender por caja o tonelada. |
+| 54 | Libro inmutable `production_movements`; las existencias del lote solo cambian por `post_production_movement`. | Cada kilo vendido, mermado o ajustado se explica con el historial; las correcciones son contrapartidas. |
+| 55 | Ventas con **borrador**; el producto se descuenta al **confirmar**, con bloqueo de lotes en orden. | Permite cotizar y recibir anticipos sin apartar producción; la confirmación es el único punto de concurrencia y se serializa por lote. |
+| 56 | Estados de venta en una columna (`borrador`, `confirmada`, `entregada`, `parcialmente_pagada`, `pagada`, `cancelada`) derivados por la BD; el estado de entrega se expone aparte. | Son los estados pedidos y no los captura el usuario; mostrar la entrega por separado evita perderla cuando la venta ya está pagada. |
+| 57 | Cancelar una venta confirmada restituye los lotes aunque ya se hubiera entregado. | El requisito pide reversión controlada; si el producto no regresó, se registra la merma explícitamente (la interfaz lo advierte). |
+| 58 | Anticipos ligados a una venta que **no** cuentan como pagado hasta aplicarse (`apply_advance`). Lo cobrable = total − pagado − anticipos sin aplicar. | Uso explícito y auditable del anticipo; un pago nunca deja sin saldo a un anticipo pendiente, así nada excede el total. |
+| 59 | Descuento por partida en importe; subtotal, descuentos y total los calcula la BD. | El total no puede divergir de sus partidas. |
+| 60 | Comprobantes de pago en el bucket de evidencias (imagen o PDF), visibles solo para roles financieros. | Reutiliza Storage, RLS por ruta y el componente de evidencias de la Fase 3. |
+| 61 | Libro de producto en kg visible para todos los miembros; folios de venta e importes, solo para roles financieros. | El campo necesita saber qué hay disponible y qué se mermó; los importes siguen la decisión 33. |
+| 62 | Dashboard comercial: flujos por fecha del periodo y saldos al día; con filtro de cultivo o proyecto se prorratea cada venta por sus partidas. | Una venta con varios proyectos no se cuenta completa en cada uno. |
 
 ## Pendientes conocidos
 
@@ -63,7 +74,10 @@
   asignaciones sí se editan.
 - Las vistas de campo (`v_project_timeline`) muestran importes solo a los roles con `finance.read`, igual que el
   expediente.
-- Las listas de movimientos y registros muestran los 200–300 más recientes; falta paginación y filtro por
-  fechas.
+- Las listas de movimientos y registros muestran los 200–500 más recientes; falta paginación.
+- Las partidas de ventas anteriores a la Fase 4 no tienen lote propio si se repartieron entre varios lotes; su origen
+  está en `production_movements` / `v_sale_lot_trace`. Esos borradores antiguos no existen (todas eran confirmadas).
+- Los formularios de la Fase 4 se verificaron con typecheck, pruebas de esquemas y RPC y renderizado HTTP por rol; aún
+  no hay pruebas E2E en navegador (Fase 6).
 - `npm audit` reporta vulnerabilidades moderadas en dependencias de desarrollo
   transitivas del generador; se revisarán antes del despliegue (Fase 6).

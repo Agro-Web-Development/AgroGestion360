@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, ClipboardList, Layers, Pencil, Receipt, Trash2 } from "lucide-react"
+import { ArrowLeft, CalendarDays, ClipboardList, Layers, Pencil, Receipt, ShoppingCart, Trash2, Wheat } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -14,7 +14,12 @@ import { formatDuration } from "@/features/fieldlogs/schemas"
 import { CostEntriesTable } from "@/features/finance/components/cost-entries-table"
 import { ProjectFinanceCard } from "@/features/finance/components/project-finance-card"
 import { getProjectCost, getProjectCostEntries } from "@/features/finance/queries"
+import { LotsTable } from "@/features/harvests/components/production-tables"
+import { getProjectHarvests } from "@/features/harvests/queries"
 import { getAssignments } from "@/features/labor/queries"
+import { PaymentsTable } from "@/features/sales/components/payments-table"
+import { TraceTable } from "@/features/sales/components/trace-table"
+import { getLotTrace, getPayments } from "@/features/sales/queries"
 import { deleteProject } from "@/features/projects/actions"
 import { AssignPlotDialog } from "@/features/projects/components/assign-plot-dialog"
 import { ChangeStatusDialog } from "@/features/projects/components/change-status-dialog"
@@ -39,14 +44,26 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
   const canWrite = can(ctx.role, "projects.write")
   const canSeeFinance = can(ctx.role, "finance.read")
   const [project, history, members] = await Promise.all([getProject(id), getProjectHistory(id), getActiveMembers()])
-  const [timeline, operations, assignments] = await Promise.all([
+  const [timeline, operations, assignments, lots] = await Promise.all([
     getProjectTimeline(project.id, {}, TIMELINE_LIMIT),
     getProjectOperations(project.id),
     getAssignments(project.id),
+    getProjectHarvests(project.id),
   ])
-  const [costs, costEntries] = canSeeFinance
-    ? await Promise.all([getProjectCost(project.id), getProjectCostEntries(project.id, COST_ENTRY_LIMIT)])
-    : [null, []]
+  const [costs, costEntries, trace] = canSeeFinance
+    ? await Promise.all([
+        getProjectCost(project.id),
+        getProjectCostEntries(project.id, COST_ENTRY_LIMIT),
+        getLotTrace({ projectId: project.id }),
+      ])
+    : [null, [], []]
+  const saleIds = [...new Set(trace.map((t) => t.saleId))]
+  const payments = saleIds.length > 0 ? await getPayments({ saleIds, includeCancelled: true }) : []
+  const produced = lots.reduce((t, l) => t + Number(l.quantity_kg), 0)
+  const soldKg = lots.reduce((t, l) => t + Number(l.sold_kg), 0)
+  const shrinkage = lots.reduce((t, l) => t + Number(l.adjusted_kg), 0)
+  const availableKg = lots.reduce((t, l) => t + Number(l.available_kg), 0)
+  const cuts = new Set(lots.map((l) => l.cut_number)).size
   const closed = isClosed(project.status)
   const plotsEditable = canWrite && !closed
   const assignable = plotsEditable ? await getAssignablePlots(project.id) : []
@@ -156,6 +173,88 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle>Producción</CardTitle>
+                <CardDescription>Cortes, lotes de producción y producto disponible.</CardDescription>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/produccion?proyecto=${project.id}&tab=cortes`}>Ver cortes</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {lots.length === 0 ? (
+                <EmptyState
+                  icon={Wheat}
+                  title="Sin cortes registrados"
+                  description="Los cortes se registran en Producción cuando el proyecto está en cosecha o comercialización."
+                />
+              ) : (
+                <>
+                  <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                    {[
+                      ["Cortes", formatNumber(cuts)],
+                      ["Lotes", formatNumber(lots.length)],
+                      ["Cosechado", formatNumber(produced, "kg")],
+                      ["Vendido", formatNumber(soldKg, "kg")],
+                      ["Mermas y ajustes", formatNumber(shrinkage, "kg")],
+                      ["Disponible", formatNumber(availableKg, "kg")],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-lg border px-3 py-2">
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="font-semibold tabular-nums">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <LotsTable rows={lots} canAdjust={can(ctx.role, "produce.adjust")} />
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {canSeeFinance && costs && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ventas y cobranza</CardTitle>
+                <CardDescription>
+                  Qué lote y parcela originó cada venta. El valor vendido y lo efectivamente cobrado se muestran por separado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                  <div className="rounded-lg border px-3 py-2">
+                    <dt className="text-xs text-muted-foreground">Valor vendido</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.salesAmount)}</dd>
+                  </div>
+                  <div className="rounded-lg border px-3 py-2">
+                    <dt className="text-xs text-muted-foreground">Cobrado (pagos recibidos)</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.collectedAmount)}</dd>
+                  </div>
+                  <div className="rounded-lg border px-3 py-2">
+                    <dt className="text-xs text-muted-foreground">Saldo por cobrar</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.receivableAmount)}</dd>
+                  </div>
+                </dl>
+                {trace.length === 0 ? (
+                  <EmptyState icon={ShoppingCart} title="Sin ventas" description="Las ventas confirmadas de sus lotes aparecerán aquí." />
+                ) : (
+                  <>
+                    <TraceTable rows={trace} />
+                    <div>
+                      <p className="mb-2 text-sm font-medium">Pagos recibidos de esas ventas</p>
+                      <p className="mb-2 text-xs text-muted-foreground">
+                        Importe total de cada pago; si una venta incluye otros proyectos, lo cobrado del proyecto se prorratea
+                        por importe.
+                      </p>
+                      <PaymentsTable payments={payments} organizationId={ctx.organization.id} canAttach={false} />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {canSeeFinance && costs && (
             <Card>

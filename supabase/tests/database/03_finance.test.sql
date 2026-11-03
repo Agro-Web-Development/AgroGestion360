@@ -230,26 +230,30 @@ insert into public.customers (id, organization_id, name, credit_days)
 values ('96000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a', 'Exportadora del Norte', 15);
 
 select throws_ok(
-  $$select public.create_sale('97000000-0000-4000-a000-0000000000f1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
-      '[{"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Brócoli","quantity_kg":12000,"unit_price":8}]')$$,
+  $$select public.save_sale('97000000-0000-4000-a000-0000000000f1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
+      '[{"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Brócoli","unit":"kg","quantity":12000,"unit_price":8}]',
+      p_confirm => true)$$,
   '22023', null, 'No se vende más de lo cosechado');
 select throws_ok(
-  $$select public.create_sale('97000000-0000-4000-a000-0000000000f2', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
-      '[{"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Brócoli","quantity_kg":100,"unit_price":8},
-        {"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Malo","quantity_kg":100,"unit_price":0}]')$$,
+  $$select public.save_sale('97000000-0000-4000-a000-0000000000f2', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
+      '[{"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Brócoli","unit":"kg","quantity":100,"unit_price":8},
+        {"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Malo","unit":"kg","quantity":100,"unit_price":0}]',
+      p_confirm => true)$$,
   '22023', null, 'Una partida inválida rechaza toda la venta');
 select is(
   (select count(*)::int from public.sales) + (select count(*)::int from public.sale_items),
   0, 'Las ventas rechazadas no dejan encabezados ni partidas (transacción completa)');
 
 select lives_ok(
-  $$select public.create_sale('97000000-0000-4000-a000-0000000000a1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
-      '[{"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Brócoli primera","quality":"primera","quantity_kg":6000,"unit_price":8.5},
-        {"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Brócoli segunda","quality":"segunda","quantity_kg":2000,"unit_price":6}]')$$,
+  $$select public.save_sale('97000000-0000-4000-a000-0000000000a1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
+      '[{"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Brócoli primera","unit":"kg","quantity":6000,"unit_price":8.5},
+        {"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Brócoli de rezaga","unit":"kg","quantity":2000,"unit_price":6}]',
+      p_confirm => true)$$,
   'Venta con dos partidas');
 select lives_ok(
-  $$select public.create_sale('97000000-0000-4000-a000-0000000000a1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
-      '[{"project_id":"62000000-0000-4000-a000-0000000000a1","description":"Brócoli primera","quantity_kg":6000,"unit_price":8.5}]')$$,
+  $$select public.save_sale('97000000-0000-4000-a000-0000000000a1', '96000000-0000-4000-a000-0000000000a1', public.mx_today(),
+      '[{"harvest_id":"95000000-0000-4000-a000-0000000000a1","description":"Brócoli primera","unit":"kg","quantity":6000,"unit_price":8.5}]',
+      p_confirm => true)$$,
   'Reintentar la venta no falla');
 select results_eq(
   $$select count(*)::int, sum(total)::numeric, min(due_date - sale_date) from public.sales$$,

@@ -4,9 +4,10 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fases 1–3 completas (incluye control operativo: inventario con almacenes, lotes y transferencias;
-bitácoras de riego, aplicaciones y actividades; maquinaria con mantenimiento; personal con asistencia y cuadrillas;
-reportes operativos) y módulos financieros (gastos, cosechas, ventas, cobranza y rentabilidad). Ver
+**Estado:** Fases 1–4 completas: control operativo (inventario con almacenes, lotes y transferencias; bitácoras;
+maquinaria; personal; reportes), módulos financieros (gastos y rentabilidad) y producción y comercialización (cortes y
+lotes de producción, inventario de producto con mermas, ventas con borrador y entregas, pagos y anticipos, cuentas por
+cobrar, trazabilidad por lote y dashboard comercial). Ver
 [docs/arquitectura.md](docs/arquitectura.md) y [docs/decisiones.md](docs/decisiones.md).
 
 ## Stack
@@ -113,11 +114,7 @@ Los datos demo incluyen inventario con compras y consumos, 4 equipos, 4 empleado
 3. **Gastos y rentabilidad:** gastos directos por categoría (sin insumos, maquinaria ni mano de obra, que
    vienen de su módulo); la misma factura no se acepta dos veces en un proyecto. La pestaña de
    rentabilidad muestra costo de producción, costo/ha, costo/kg, ventas y utilidad por proyecto.
-4. **Cosechas:** solo en proyectos en cosecha o comercialización; no se puede eliminar producción ya vendida.
-5. **Ventas:** *Nueva venta* con varias partidas; no se vende más de lo cosechado disponible. La venta,
-   sus partidas y el folio `VTA-AAAA-0001` se crean en una sola transacción.
-6. **Cobranza:** pagos parciales que nunca exceden el saldo; cancelar un pago restituye el saldo; una venta
-   con pagos no se cancela. Antigüedad de saldos por cliente.
+4. **Cosechas, ventas y cobranza:** ampliadas en la Fase 4 (ver abajo).
 7. **Expediente del proyecto:** tarjeta *Costos y resultados* y *Detalle de costos* (cuyo total coincide
    siempre con el costo de producción). Al cerrar el proyecto sus costos e ingresos quedan congelados.
 8. **Permisos:** `agronomo@…` registra maquinaria y mano de obra pero no ve ventas, clientes ni gastos;
@@ -150,7 +147,41 @@ personas con asignaciones y una falta registrada.
 8. **Reportes operativos:** nueve reportes por periodo y proyecto con exportación CSV.
 9. **Permisos:** `campo@…` (supervisor) registra bitácoras, asistencia y jornadas pero no mueve inventario ni
    administra equipos; `agronomo@…` administra maquinaria, cuadrillas y asignaciones; `consulta@…` solo consulta.
-10. **Pruebas:** `npm test` (83) y `npm run test:db` (207, incluye `04_operations.test.sql`).
+10. **Pruebas:** `npm test` y `npm run test:db` (incluye `04_operations.test.sql`).
+
+## Cómo probar la Fase 4 (producción y comercialización)
+
+Los datos demo incluyen 5 lotes de brócoli en 4 cortes (capturados en cajas, toneladas y kg; el corte 4 tiene dos
+calidades), una merma y una pérdida, 3 clientes con tipo y 4 ventas: exportación con anticipo aplicado, entregada y con
+pago parcial; congelado con dos lotes, entregada en dos viajes y pagada; mercado nacional con descuento, vencida y sin
+pagar; y un borrador.
+
+1. **Producción → Registrar corte:** elige proyecto y parcela (el cultivo se toma del proyecto), unidad *Cajas* con su
+   peso neto, calidad, clasificación, responsable y fotografías. Se crea el lote `LOT-AAAA-0006`; si registras otra
+   calidad el mismo día, comparte el número de corte. *Indicadores* muestra cortes, producción por parcela, fecha y
+   calidad, rendimiento por hectárea, vendido, mermas y disponible; filtra por periodo y proyecto.
+2. **Inventario de producto:** existencia por lote (inicial − vendido − mermas). Registra una *merma* o *pérdida* con
+   justificación (no puede exceder lo disponible) y revísala en *Movimientos*; *Revertir* crea la contrapartida. Un
+   lote con ventas no se elimina ni cambia de origen, y su cantidad no baja de lo vendido.
+3. **Trazabilidad:** abre un lote (ícono de ruta): labores de campo de su parcela hasta el corte, movimientos y ventas
+   con cliente.
+4. **Ventas → Nueva venta:** agrega partidas de lotes distintos (incluso de otro cultivo), en cajas, toneladas o kg,
+   con descuento. *Guardar borrador* no descuenta producto; *Confirmar venta* descuenta los lotes en una transacción.
+   Prueba confirmar dos borradores que juntos exceden un lote: el segundo se rechaza.
+5. **Detalle de venta:** registra una *entrega* parcial y luego el resto (estado *Entregada*); registra un *pago*
+   parcial con comprobante (imagen o PDF); en el borrador `VTA-AAAA-0004` registra un *anticipo*, confírmalo y usa
+   *Aplicar* para que cuente como pagado. *Cancelar* una venta con pagos se rechaza; cancela primero el pago (queda en
+   el historial) y luego la venta: su producción regresa a los lotes con un movimiento de reversión.
+6. **Cobranza:** total vendido, pagado, saldo, % de recuperación, último pago, vencidos, antigüedad por cliente,
+   anticipos pendientes de aplicar y pagos del periodo con comprobantes.
+7. **Clientes:** tipo de cliente y expediente con compras, pagos, saldos y producto comprado por lote.
+8. **Dashboard comercial:** indicadores y gráficas de producción por cultivo y proyecto, ventas mensuales, ventas por
+   cliente, cobranza por periodo y saldos pendientes, filtrables por fechas, cultivo y proyecto.
+9. **Expediente del proyecto:** tarjetas *Producción* (cortes, lotes, disponible) y *Ventas y cobranza* (valor vendido
+   vs. cobrado, ventas por lote y parcela, pagos recibidos).
+10. **Permisos:** `agronomo@…` y `campo@…` registran cortes y mermas pero no ven ventas, folios ni importes;
+    `consulta@…` ve todo sin poder capturar.
+11. **Pruebas:** `npm test` (101) y `npm run test:db` (315, incluye `05_commercial.test.sql`).
 
 ## Seguridad
 

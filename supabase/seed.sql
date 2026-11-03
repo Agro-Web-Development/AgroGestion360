@@ -165,6 +165,14 @@ declare
   s_1 constant uuid := '00000000-0000-4000-a900-000000000001';
   s_2 constant uuid := '00000000-0000-4000-a900-000000000002';
   s_3 constant uuid := '00000000-0000-4000-a900-000000000003';
+  s_4 constant uuid := '00000000-0000-4000-a900-000000000004';
+  a_1 constant uuid := '00000000-0000-4000-a900-000000000101';
+  -- Lotes de producción (cada corte por calidad)
+  h_1 constant uuid := '00000000-0000-4000-a910-000000000001';
+  h_2 constant uuid := '00000000-0000-4000-a910-000000000002';
+  h_3 constant uuid := '00000000-0000-4000-a910-000000000003';
+  h_4 constant uuid := '00000000-0000-4000-a910-000000000004';
+  h_5 constant uuid := '00000000-0000-4000-a910-000000000005';
   -- Catálogos (las categorías y el almacén general los crea el alta de la organización)
   sup_semillas constant uuid := '00000000-0000-4000-ab00-000000000001';
   sup_fert constant uuid := '00000000-0000-4000-ab00-000000000002';
@@ -323,35 +331,63 @@ begin
     (v_org, p_broc, null,     d - 12,  'fletes',                  'Flete refrigerado a Celaya',       'Transportes Frío Express', 'TFE-1342', 28500),
     (v_org, p_broc, null,     d - 10,  'maquila',                 'Hidroenfriado y empaque',          'Empacadora del Bajío', 'EDB-4410', 41200);
 
-  -- Cosechas de brócoli (proyecto en cosecha)
-  insert into public.harvests (organization_id, project_id, plot_id, harvest_date, quality, quantity_kg, packages) values
-    (v_org, p_broc, pl_lote1, d - 25, 'primera', 42000, 2100),
-    (v_org, p_broc, pl_lote1, d - 18, 'segunda', 12000, 600),
-    (v_org, p_broc, pl_lote1, d - 15, 'primera', 38500, 1925),
-    (v_org, p_broc, pl_lote1, d - 6,  'primera', 18000, 900);
+  -- Cortes de brócoli (proyecto en cosecha): cada corte por calidad es un lote
+  -- LOT-AAAA-0001. Se capturan en cajas, toneladas o kg; la existencia es en kg.
+  insert into public.harvests (id, organization_id, project_id, plot_id, harvest_date, cut_number, quality, classification,
+                               unit, quantity, unit_weight_kg, packages, responsible_id, notes) values
+    (h_1, v_org, p_broc, pl_lote1, d - 25, 1, 'primera', 'Exportación', 'caja', 2100, 20, 2100, e_3, 'Primer corte, cabeza compacta'),
+    (h_2, v_org, p_broc, pl_lote1, d - 18, 2, 'segunda', 'Congelado',   'kg',   12000, null, 600, e_3, null),
+    (h_3, v_org, p_broc, pl_lote1, d - 15, 3, 'primera', 'Nacional',    't',    38.5, null, 1925, e_3, null),
+    (h_4, v_org, p_broc, pl_lote1, d - 6,  4, 'primera', 'Exportación', 'caja', 900, 20, 900, e_6, null),
+    (h_5, v_org, p_broc, pl_lote1, d - 6,  4, 'segunda', 'Congelado',   'kg',   4000, null, null, e_6, 'Mismo corte, segunda calidad');
 
-  -- Clientes, ventas (folio VTA) y pagos parciales
-  insert into public.customers (id, organization_id, name, rfc, contact_name, phone, email, credit_days) values
-    (c_export, v_org, 'Exportadora Hortícola del Bajío', 'EHB120415KQ3', 'Mariana Lozano', '461 555 0301', 'compras@demo-exportadora.mx', 30),
-    (c_congel, v_org, 'Congeladora Valle Verde',         'CVV090722HT8', 'Jorge Arriaga',  '461 555 0302', null, 15),
-    (c_abasto, v_org, 'Comercializadora Central de Abasto', null,       'Luis Mendoza',   '462 555 0303', null, 7);
+  -- Clientes
+  insert into public.customers (id, organization_id, name, customer_type, rfc, contact_name, phone, email, address, credit_days) values
+    (c_export, v_org, 'Exportadora Hortícola del Bajío', 'exportadora', 'EHB120415KQ3', 'Mariana Lozano', '461 555 0301',
+     'compras@demo-exportadora.mx', 'Carretera Celaya–Salvatierra km 4, Celaya, Gto.', 30),
+    (c_congel, v_org, 'Congeladora Valle Verde',         'industria',   'CVV090722HT8', 'Jorge Arriaga',  '461 555 0302', null, null, 15),
+    (c_abasto, v_org, 'Comercializadora Central de Abasto', 'mayorista', null,           'Luis Mendoza',   '462 555 0303', null, null, 7);
 
-  perform public.create_sale(s_1, c_export, d - 20,
-    jsonb_build_array(jsonb_build_object('project_id', p_broc, 'description', 'Brócoli de exportación', 'quality', 'primera',
-                                         'quantity_kg', 40000, 'unit_price', 9.80)));
-  perform public.create_sale(s_2, c_congel, d - 12,
-    jsonb_build_array(
-      jsonb_build_object('project_id', p_broc, 'description', 'Brócoli para congelado', 'quality', 'primera', 'quantity_kg', 30000, 'unit_price', 8.50),
-      jsonb_build_object('project_id', p_broc, 'description', 'Brócoli para congelado', 'quality', 'segunda', 'quantity_kg', 10000, 'unit_price', 5.20)),
-    p_notes => 'Entrega en planta Celaya');
-  perform public.create_sale(s_3, c_abasto, d - 9,
-    jsonb_build_array(jsonb_build_object('project_id', p_broc, 'description', 'Brócoli mercado nacional', 'quality', 'primera',
-                                         'quantity_kg', 6000, 'unit_price', 7.50)));
-
-  perform public.register_payment(gen_random_uuid(), s_1, d - 18, 150000, 'transferencia', 'Anticipo SPEI 0034511');
+  -- Venta de exportación: anticipo sobre el borrador, confirmación (descuenta el
+  -- lote), aplicación explícita del anticipo, entrega y un pago parcial.
+  perform public.save_sale(s_1, c_export, d - 20,
+    jsonb_build_array(jsonb_build_object('harvest_id', h_1, 'description', 'Brócoli de exportación', 'unit', 'caja',
+                                         'unit_weight_kg', 20, 'quantity', 2000, 'unit_price', 196)),
+    p_delivery_date => d - 19, p_notes => 'Entrega LAB empacadora Celaya');
+  perform public.register_payment(a_1, s_1, d - 21, 150000, 'transferencia', 'Anticipo SPEI 0034511', p_kind => 'anticipo');
+  perform public.confirm_sale(s_1);
+  perform public.apply_advance(gen_random_uuid(), a_1, null, d - 18);
+  perform public.register_delivery(gen_random_uuid(), s_1, d - 19, null, 'Mariana Lozano', 'Thermo King placas GT-45-210');
   perform public.register_payment(gen_random_uuid(), s_1, d - 5, 100000, 'transferencia', 'SPEI 0035120');
+
+  -- Venta con dos lotes (primera y segunda), entregada en dos viajes y pagada.
+  perform public.save_sale(s_2, c_congel, d - 12,
+    jsonb_build_array(
+      jsonb_build_object('harvest_id', h_3, 'description', 'Brócoli para congelado', 'unit', 't', 'quantity', 30, 'unit_price', 8500),
+      jsonb_build_object('harvest_id', h_2, 'description', 'Brócoli para congelado', 'unit', 'kg', 'quantity', 10000, 'unit_price', 5.20)),
+    p_notes => 'Entrega en planta Celaya', p_confirm => true);
+  perform public.register_delivery(gen_random_uuid(), s_2, d - 12,
+    jsonb_build_array(jsonb_build_object('sale_item_id', (select id from public.sale_items where sale_id = s_2 and harvest_id = h_3), 'quantity', 20)),
+    'Recepción planta Celaya', 'Camión propio');
+  perform public.register_delivery(gen_random_uuid(), s_2, d - 11, null, 'Recepción planta Celaya', 'Camión propio');
   perform public.register_payment(gen_random_uuid(), s_2, d - 8, 200000, 'transferencia', 'SPEI 7712');
   perform public.register_payment(gen_random_uuid(), s_2, d - 2, 107000, 'cheque', 'Cheque 004581');
+
+  -- Venta de contado con descuento, sin entregar ni pagar (vencida).
+  perform public.save_sale(s_3, c_abasto, d - 9,
+    jsonb_build_array(jsonb_build_object('harvest_id', h_3, 'description', 'Brócoli mercado nacional', 'unit', 'kg',
+                                         'quantity', 6000, 'unit_price', 7.50, 'discount', 500)),
+    p_confirm => true);
+
+  -- Borrador: aún no descuenta el lote.
+  perform public.save_sale(s_4, c_export, d,
+    jsonb_build_array(jsonb_build_object('harvest_id', h_4, 'description', 'Brócoli de exportación', 'unit', 'caja',
+                                         'unit_weight_kg', 20, 'quantity', 300, 'unit_price', 200)),
+    p_delivery_date => d + 2);
+
+  -- Mermas y pérdidas justificadas
+  perform public.register_production_adjustment(gen_random_uuid(), h_2, 'merma', 300, d - 10, 'Rezaga por manchado detectada en selección');
+  perform public.register_production_adjustment(gen_random_uuid(), h_1, 'perdida', 150, d - 19, 'Cajas dañadas en maniobra de carga');
 
   -- ===========================================================================
   -- Control operativo: almacenes, bitácoras, maquinaria y personal

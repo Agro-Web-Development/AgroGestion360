@@ -3,6 +3,7 @@
 import { useState } from "react"
 
 import { FormInput } from "@/components/forms/form-input"
+import { FormSelect } from "@/components/forms/form-select"
 import { FormTextarea } from "@/components/forms/form-textarea"
 import { SubmitButton } from "@/components/forms/submit-button"
 import { useActionForm } from "@/components/forms/use-action-form"
@@ -18,10 +19,11 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { saveCustomer } from "../actions"
-import { customerSchema, type CustomerInput } from "../schemas"
+import { CUSTOMER_TYPE_LABELS, CUSTOMER_TYPES, customerSchema, type CustomerInput } from "../schemas"
 
 const EMPTY: CustomerInput = {
   name: "",
+  customerType: "mayorista",
   rfc: "",
   contactName: "",
   phone: "",
@@ -58,13 +60,19 @@ export function CustomerFormDialog({ trigger, customer }: { trigger: React.React
           </DialogHeader>
           <FieldGroup className="grid gap-5 sm:grid-cols-2">
             <FormInput control={form.control} name="name" label="Nombre o razón social" className="sm:col-span-2" />
-            <FormInput control={form.control} name="rfc" label="RFC" />
+            <FormSelect
+              control={form.control}
+              name="customerType"
+              label="Tipo de cliente"
+              options={CUSTOMER_TYPES.map((t) => ({ value: t, label: CUSTOMER_TYPE_LABELS[t] }))}
+            />
+            <FormInput control={form.control} name="rfc" label="RFC (cuando corresponda)" />
             <FormInput control={form.control} name="creditDays" label="Días de crédito" inputMode="numeric" />
             <FormInput control={form.control} name="contactName" label="Contacto" />
             <FormInput control={form.control} name="phone" label="Teléfono" type="tel" />
             <FormInput control={form.control} name="email" label="Correo" type="email" className="sm:col-span-2" />
             <FormInput control={form.control} name="address" label="Dirección" className="sm:col-span-2" />
-            <FormTextarea control={form.control} name="notes" label="Notas" className="sm:col-span-2" />
+            <FormTextarea control={form.control} name="notes" label="Observaciones" className="sm:col-span-2" />
           </FieldGroup>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

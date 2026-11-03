@@ -1,6 +1,7 @@
 "use client"
 
 import { Pencil, Power, PowerOff, Search, Trash2 } from "lucide-react"
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { ConfirmAction } from "@/components/shared/confirm-action"
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatMoney, formatNumber } from "@/lib/format"
 import { deleteCustomer, setCustomerActive } from "../actions"
 import type { Customer } from "../queries"
+import { CUSTOMER_TYPE_LABELS } from "../schemas"
 import { CustomerFormDialog } from "./customer-form-dialog"
 
 export function CustomersTable({
@@ -68,15 +70,18 @@ export function CustomersTable({
             {filtered.map((c) => (
               <TableRow key={c.id} className={c.is_active ? undefined : "opacity-60"}>
                 <TableCell>
-                  <p className="font-medium">
+                  <Link href={`/clientes/${c.id}`} className="font-medium hover:underline">
                     {c.name}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {CUSTOMER_TYPE_LABELS[c.customer_type]}
+                    {c.rfc && ` · ${c.rfc}`}
                     {!c.is_active && (
                       <Badge variant="destructive" className="ml-2">
                         Inactivo
                       </Badge>
                     )}
                   </p>
-                  {c.rfc && <p className="text-xs text-muted-foreground">{c.rfc}</p>}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {c.contact_name ?? "—"}
@@ -103,6 +108,7 @@ export function CustomersTable({
                           customer={{
                             id: c.id,
                             name: c.name,
+                            customerType: c.customer_type,
                             rfc: c.rfc ?? "",
                             contactName: c.contact_name ?? "",
                             phone: c.phone ?? "",

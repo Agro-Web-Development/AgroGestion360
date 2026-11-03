@@ -21,6 +21,7 @@ export async function saveCustomer(input: CustomerInput): Promise<ActionResult> 
   const { id, ...v } = parsed.data
   const values = {
     name: v.name,
+    customer_type: v.customerType,
     rfc: v.rfc,
     contact_name: v.contactName,
     phone: v.phone,

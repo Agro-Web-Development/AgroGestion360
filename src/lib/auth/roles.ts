@@ -52,6 +52,7 @@ export const PERMISSIONS = {
   "employees.write": ["propietario", "administrador", "agronomo"],
   "labor.write": ["propietario", "administrador", "agronomo", "supervisor"],
   "harvest.write": ["propietario", "administrador", "agronomo", "supervisor"],
+  "produce.adjust": ["propietario", "administrador", "agronomo", "supervisor", "almacen"],
   "sales.write": ["propietario", "administrador", "finanzas"],
   "payments.write": ["propietario", "administrador", "finanzas"],
   "expenses.write": ["propietario", "administrador", "finanzas"],

@@ -3,7 +3,7 @@
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { formatNumber } from "@/lib/format"
+import { formatMoney, formatNumber } from "@/lib/format"
 
 type Datum = { label: string; value: number }
 
@@ -12,8 +12,20 @@ type Datum = { label: string; value: number }
  * título de la tarjeta nombra la medida. Valor al final de cada barra, tooltip
  * al pasar el cursor y tabla oculta para lectores de pantalla.
  */
-export function BarListChart({ data, unit, caption }: { data: Datum[]; unit?: string; caption: string }) {
+export function BarListChart({
+  data,
+  unit,
+  caption,
+  money = false,
+}: {
+  data: Datum[]
+  unit?: string
+  caption: string
+  /** Valores en pesos (MXN). */
+  money?: boolean
+}) {
   const isMobile = useIsMobile()
+  const fmt = (v: number) => (money ? formatMoney(v) : formatNumber(v, unit))
   const height = Math.max(data.length * 38 + 8, 80)
 
   return (
@@ -33,7 +45,7 @@ export function BarListChart({ data, unit, caption }: { data: Datum[]; unit?: st
             />
             <Tooltip
               cursor={{ fill: "var(--muted)", opacity: 0.6 }}
-              formatter={(value) => [formatNumber(Number(value), unit), null]}
+              formatter={(value) => [fmt(Number(value)), null]}
               separator=""
               contentStyle={{
                 background: "var(--popover)",
@@ -57,7 +69,7 @@ export function BarListChart({ data, unit, caption }: { data: Datum[]; unit?: st
               <LabelList
                 dataKey="value"
                 position="right"
-                formatter={(value) => formatNumber(Number(value), unit)}
+                formatter={(value) => fmt(Number(value))}
                 style={{ fill: "var(--foreground)", fontSize: 12, fontWeight: 500 }}
               />
             </Bar>
@@ -70,7 +82,7 @@ export function BarListChart({ data, unit, caption }: { data: Datum[]; unit?: st
           {data.map((d) => (
             <tr key={d.label}>
               <th scope="row">{d.label}</th>
-              <td>{formatNumber(d.value, unit)}</td>
+              <td>{fmt(d.value)}</td>
             </tr>
           ))}
         </tbody>

@@ -1,12 +1,36 @@
 import { z } from "zod"
 
 import { optionalInteger, optionalText, requiredText } from "@/lib/validation"
+import type { Database } from "@/types/database"
+
+export type CustomerType = Database["public"]["Enums"]["customer_type"]
+
+export const CUSTOMER_TYPES = [
+  "mayorista",
+  "minorista",
+  "empacadora",
+  "exportadora",
+  "industria",
+  "intermediario",
+  "otro",
+] as const satisfies readonly CustomerType[]
+
+export const CUSTOMER_TYPE_LABELS: Record<CustomerType, string> = {
+  mayorista: "Mayorista",
+  minorista: "Minorista",
+  empacadora: "Empacadora",
+  exportadora: "Exportadora",
+  industria: "Industria / procesadora",
+  intermediario: "Intermediario",
+  otro: "Otro",
+}
 
 const RFC_REGEX = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/
 
 export const customerSchema = z.object({
   id: z.uuid().optional(),
   name: requiredText(2, 150, "El nombre debe tener al menos 2 caracteres"),
+  customerType: z.enum(CUSTOMER_TYPES, { error: "Selecciona el tipo de cliente" }),
   rfc: optionalText(13)
     .transform((v) => v?.toUpperCase() ?? null)
     .refine((v) => v === null || RFC_REGEX.test(v), "RFC no válido (12 o 13 caracteres)"),

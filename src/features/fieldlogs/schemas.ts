@@ -15,6 +15,7 @@ import {
   requiredTime,
   NONE,
 } from "@/lib/validation"
+import type { Permission } from "@/lib/auth/roles"
 
 /** Registros de bitácora que admiten cancelación y evidencias. */
 export const FIELD_RECORD_KINDS = ["riego", "actividad", "mantenimiento"] as const
@@ -25,14 +26,33 @@ export const ATTACHMENT_ENTITIES = [
   "chemical_application",
   "field_activity",
   "machinery_maintenance",
+  "harvest",
+  "payment",
 ] as const
 export type AttachmentEntity = (typeof ATTACHMENT_ENTITIES)[number]
 
+/** Permiso para agregar evidencias a cada tipo de registro (igual que la RLS de Storage). */
+export const ATTACHMENT_PERMISSION: Record<AttachmentEntity, Permission> = {
+  irrigation_log: "fieldlogs.write",
+  chemical_application: "fieldlogs.write",
+  field_activity: "fieldlogs.write",
+  machinery_maintenance: "fieldlogs.write",
+  harvest: "harvest.write",
+  payment: "payments.write",
+}
+
 export const ATTACHMENT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"] as const
+/** Los comprobantes de pago también se aceptan en PDF. */
+export const RECEIPT_TYPES = [...ATTACHMENT_TYPES, "application/pdf"] as const
+export type AttachmentMime = (typeof RECEIPT_TYPES)[number]
+
+export function attachmentTypes(entity: AttachmentEntity): readonly AttachmentMime[] {
+  return entity === "payment" ? RECEIPT_TYPES : ATTACHMENT_TYPES
+}
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 export const MAX_ATTACHMENTS_PER_UPLOAD = 6
 
-export const TIMELINE_KINDS = ["riego", "aplicacion", "actividad", "mano_obra", "maquinaria", "insumo"] as const
+export const TIMELINE_KINDS = ["riego", "aplicacion", "actividad", "mano_obra", "maquinaria", "insumo", "cosecha"] as const
 export type TimelineKind = (typeof TIMELINE_KINDS)[number]
 
 export const TIMELINE_LABELS: Record<TimelineKind, string> = {
@@ -42,6 +62,7 @@ export const TIMELINE_LABELS: Record<TimelineKind, string> = {
   mano_obra: "Mano de obra",
   maquinaria: "Maquinaria",
   insumo: "Insumo",
+  cosecha: "Cosecha",
 }
 
 const notFuture = (date: string) => date <= todayISO()
@@ -152,7 +173,7 @@ export const activityTypeSchema = z.object({
 export const attachmentFileSchema = z.object({
   path: z.string().min(10).max(400),
   name: z.string().trim().min(1).max(200),
-  type: z.enum(ATTACHMENT_TYPES),
+  type: z.enum(RECEIPT_TYPES),
   size: z.number().int().positive().max(MAX_ATTACHMENT_BYTES),
 })
 

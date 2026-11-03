@@ -1,4 +1,4 @@
-import { ClipboardList, Droplets, FlaskConical, HardHat, Package, Tractor, type LucideIcon } from "lucide-react"
+import { ClipboardList, Droplets, FlaskConical, HardHat, Package, Tractor, Wheat, type LucideIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { formatDate, formatMoney } from "@/lib/format"
@@ -13,6 +13,7 @@ const ICONS: Record<TimelineKind, LucideIcon> = {
   mano_obra: HardHat,
   maquinaria: Tractor,
   insumo: Package,
+  cosecha: Wheat,
 }
 
 const TONES: Record<TimelineKind, string> = {
@@ -22,6 +23,7 @@ const TONES: Record<TimelineKind, string> = {
   mano_obra: "bg-primary/10 text-primary",
   maquinaria: "bg-muted text-foreground",
   insumo: "bg-success/15 text-primary dark:text-success",
+  cosecha: "bg-primary text-primary-foreground",
 }
 
 /** Bitácora cronológica del proyecto, agrupada por día. */
