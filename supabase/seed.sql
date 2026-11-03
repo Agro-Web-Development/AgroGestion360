@@ -156,6 +156,8 @@ declare
   e_2 constant uuid := '00000000-0000-4000-a700-000000000002';
   e_3 constant uuid := '00000000-0000-4000-a700-000000000003';
   e_4 constant uuid := '00000000-0000-4000-a700-000000000004';
+  e_5 constant uuid := '00000000-0000-4000-a700-000000000005';
+  e_6 constant uuid := '00000000-0000-4000-a700-000000000006';
   -- Clientes y ventas
   c_export constant uuid := '00000000-0000-4000-a800-000000000001';
   c_congel constant uuid := '00000000-0000-4000-a800-000000000002';
@@ -163,40 +165,83 @@ declare
   s_1 constant uuid := '00000000-0000-4000-a900-000000000001';
   s_2 constant uuid := '00000000-0000-4000-a900-000000000002';
   s_3 constant uuid := '00000000-0000-4000-a900-000000000003';
+  -- Catálogos (las categorías y el almacén general los crea el alta de la organización)
+  sup_semillas constant uuid := '00000000-0000-4000-ab00-000000000001';
+  sup_fert constant uuid := '00000000-0000-4000-ab00-000000000002';
+  sup_agq constant uuid := '00000000-0000-4000-ab00-000000000003';
+  sup_gas constant uuid := '00000000-0000-4000-ab00-000000000004';
+  sup_inv constant uuid := '00000000-0000-4000-ab00-000000000005';
+  i_bio constant uuid := '00000000-0000-4000-a500-000000000007';
+  w_norte constant uuid := '00000000-0000-4000-ac00-000000000001';
+  cat_sem uuid;
+  cat_fer uuid;
+  cat_agq uuid;
+  cat_bio uuid;
+  cat_com uuid;
+  w_general uuid;
   d date := public.mx_today();
   k int;
 begin
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
 
+  select id into cat_sem from public.inventory_categories where organization_id = v_org and kind = 'semilla';
+  select id into cat_fer from public.inventory_categories where organization_id = v_org and kind = 'fertilizante';
+  select id into cat_agq from public.inventory_categories where organization_id = v_org and kind = 'agroquimico';
+  select id into cat_bio from public.inventory_categories where organization_id = v_org and kind = 'biologico';
+  select id into cat_com from public.inventory_categories where organization_id = v_org and kind = 'combustible';
+  select id into w_general from public.warehouses where organization_id = v_org and name = 'Almacén general';
+
+  insert into public.suppliers (id, organization_id, name, rfc, contact_name, phone) values
+    (sup_semillas, v_org, 'Semillas del Bajío',          'SBA100312MN4', 'Óscar Medina',   '462 555 0401'),
+    (sup_fert,     v_org, 'Fertilizantes de Guanajuato', 'FGU080125RT2', 'Laura Pineda',   '462 555 0402'),
+    (sup_agq,      v_org, 'Agroquímicos Irapuato',       null,           'Héctor Ramos',   '462 555 0403'),
+    (sup_gas,      v_org, 'Gasolinera El Copal',         null,           null,             '462 555 0404'),
+    (sup_inv,      v_org, 'Invernaderos Valle Verde',    null,           'Sofía Aguilar',  '461 555 0405');
+
+  -- Personal (antes que el inventario: los movimientos registran responsable)
+  insert into public.employees (id, organization_id, full_name, position, phone, daily_wage, worker_type, hire_date) values
+    (e_1, v_org, 'Pedro Sánchez Luna',   'Tractorista',          '462 555 0201', 450, 'planta',   '2019-02-11'),
+    (e_2, v_org, 'Miguel Ortega Ruiz',   'Aplicador',            '462 555 0202', 400, 'planta',   '2021-07-01'),
+    (e_3, v_org, 'Rosa María Vega',      'Jornalera',            null,           350, 'eventual', d - 120),
+    (e_4, v_org, 'Raúl Díaz Hernández',  'Chofer',               '462 555 0204', 420, 'planta',   '2022-03-15'),
+    (e_5, v_org, 'Juana López Mata',     'Jornalera',            null,           350, 'temporal', d - 90),
+    (e_6, v_org, 'Ernesto Ríos Paz',     'Jornalero',            null,           350, 'temporal', d - 90);
+
   -- Inventario: compras (no son costo de proyecto) y consumos (sí lo son)
-  insert into public.inventory_products (id, organization_id, name, sku, category, unit, min_stock) values
-    (i_semilla,  v_org, 'Semilla maíz blanco H-377',      'SEM-001', 'semilla',      'saco', 10),
-    (i_urea,     v_org, 'Urea 46 %',                      'FER-001', 'fertilizante', 'kg',   2000),
-    (i_dap,      v_org, 'Fosfato diamónico DAP 18-46-00', 'FER-002', 'fertilizante', 'kg',   1000),
-    (i_fungi,    v_org, 'Fungicida clorotalonil 720',     'AGQ-001', 'agroquimico',  'l',    40),
-    (i_diesel,   v_org, 'Diésel',                         'COM-001', 'combustible',  'l',    500),
-    (i_plantula, v_org, 'Plántula de brócoli Avenger',    'SEM-002', 'semilla',      'pieza', null);
+  insert into public.inventory_products (id, organization_id, name, sku, category_id, unit, min_stock, track_lots) values
+    (i_semilla,  v_org, 'Semilla maíz blanco H-377',      'SEM-001', cat_sem, 'saco', 10,   true),
+    (i_urea,     v_org, 'Urea 46 %',                      'FER-001', cat_fer, 'kg',   2000, false),
+    (i_dap,      v_org, 'Fosfato diamónico DAP 18-46-00', 'FER-002', cat_fer, 'kg',   1000, false),
+    (i_fungi,    v_org, 'Fungicida clorotalonil 720',     'AGQ-001', cat_agq, 'l',    40,   true),
+    (i_diesel,   v_org, 'Diésel',                         'COM-001', cat_com, 'l',    500,  false),
+    (i_plantula, v_org, 'Plántula de brócoli Avenger',    'SEM-002', cat_sem, 'pieza', null, false),
+    (i_bio,      v_org, 'Trichoderma harzianum WP',       'BIO-001', cat_bio, 'kg',   5,    true);
 
   perform public.register_inventory_movement(gen_random_uuid(), i_semilla, 'entrada', d - 110, 60, 3850,
-    p_supplier => 'Semillas del Bajío', p_reference => 'F-10231');
+    p_supplier => sup_semillas, p_reference => 'F-10231', p_lot_number => 'H377-26A', p_lot_expiry => d + 250,
+    p_responsible => e_4);
   perform public.register_inventory_movement(gen_random_uuid(), i_urea, 'entrada', d - 110, 12000, 9.80,
-    p_supplier => 'Fertilizantes de Guanajuato', p_reference => 'FG-5520');
+    p_supplier => sup_fert, p_reference => 'FG-5520');
   perform public.register_inventory_movement(gen_random_uuid(), i_urea, 'entrada', d - 50, 8000, 10.60,
-    p_supplier => 'Fertilizantes de Guanajuato', p_reference => 'FG-5871');
+    p_supplier => sup_fert, p_reference => 'FG-5871');
   perform public.register_inventory_movement(gen_random_uuid(), i_dap, 'entrada', d - 110, 6000, 14.20,
-    p_supplier => 'Fertilizantes de Guanajuato', p_reference => 'FG-5521');
+    p_supplier => sup_fert, p_reference => 'FG-5521');
   perform public.register_inventory_movement(gen_random_uuid(), i_fungi, 'entrada', d - 70, 120, 285,
-    p_supplier => 'Agroquímicos Irapuato', p_reference => 'AI-889');
+    p_supplier => sup_agq, p_reference => 'AI-889', p_lot_number => 'CL720-2401', p_lot_expiry => d + 420);
   perform public.register_inventory_movement(gen_random_uuid(), i_diesel, 'entrada', d - 112, 6000, 23.90,
-    p_supplier => 'Gasolinera El Copal', p_reference => 'GC-3302');
+    p_supplier => sup_gas, p_reference => 'GC-3302');
   perform public.register_inventory_movement(gen_random_uuid(), i_diesel, 'entrada', d - 45, 4000, 24.60,
-    p_supplier => 'Gasolinera El Copal', p_reference => 'GC-3517');
+    p_supplier => sup_gas, p_reference => 'GC-3517');
   perform public.register_inventory_movement(gen_random_uuid(), i_plantula, 'entrada', d - 86, 900000, 0.42,
-    p_supplier => 'Invernaderos Valle Verde', p_reference => 'IVV-120');
+    p_supplier => sup_inv, p_reference => 'IVV-120');
+  perform public.register_inventory_movement(gen_random_uuid(), i_bio, 'entrada', d - 60, 20, 310,
+    p_supplier => sup_agq, p_reference => 'AI-902', p_lot_number => 'TH-0925', p_lot_expiry => d + 20);
 
   -- Maíz (45 ha): siembra y fertilización
-  perform public.register_inventory_movement(gen_random_uuid(), i_semilla, 'consumo', d - 104, 30, p_project => p_maiz, p_plot => pl_sur);
-  perform public.register_inventory_movement(gen_random_uuid(), i_semilla, 'consumo', d - 104, 15, p_project => p_maiz, p_plot => pl_bajio);
+  perform public.register_inventory_movement(gen_random_uuid(), i_semilla, 'consumo', d - 104, 30, p_project => p_maiz, p_plot => pl_sur,
+    p_lot_number => 'H377-26A', p_responsible => e_1);
+  perform public.register_inventory_movement(gen_random_uuid(), i_semilla, 'consumo', d - 104, 15, p_project => p_maiz, p_plot => pl_bajio,
+    p_lot_number => 'H377-26A', p_responsible => e_1);
   perform public.register_inventory_movement(gen_random_uuid(), i_dap, 'consumo', d - 104, 3000, p_project => p_maiz, p_plot => pl_sur);
   perform public.register_inventory_movement(gen_random_uuid(), i_dap, 'consumo', d - 104, 1500, p_project => p_maiz, p_plot => pl_bajio);
   perform public.register_inventory_movement(gen_random_uuid(), i_urea, 'consumo', d - 60, 6000, p_project => p_maiz, p_plot => pl_sur);
@@ -209,14 +254,12 @@ begin
 
   -- Jitomate (12 ha)
   perform public.register_inventory_movement(gen_random_uuid(), i_urea, 'consumo', d - 30, 2400, p_project => p_jito, p_plot => pl_norte);
-  perform public.register_inventory_movement(gen_random_uuid(), i_fungi, 'consumo', d - 20, 36, p_project => p_jito, p_plot => pl_norte);
   perform public.register_inventory_movement(gen_random_uuid(), i_diesel, 'consumo', d - 40, 600, p_project => p_jito, p_plot => pl_norte);
 
   -- Brócoli (20 ha)
   perform public.register_inventory_movement(gen_random_uuid(), i_plantula, 'consumo', d - 85, 880000, p_project => p_broc, p_plot => pl_lote1);
   perform public.register_inventory_movement(gen_random_uuid(), i_urea, 'consumo', d - 55, 4000, p_project => p_broc, p_plot => pl_lote1);
   perform public.register_inventory_movement(gen_random_uuid(), i_dap, 'consumo', d - 84, 1200, p_project => p_broc, p_plot => pl_lote1);
-  perform public.register_inventory_movement(gen_random_uuid(), i_fungi, 'consumo', d - 40, 50, p_project => p_broc, p_plot => pl_lote1);
   perform public.register_inventory_movement(gen_random_uuid(), i_diesel, 'consumo', d - 30, 1400, p_project => p_broc, p_plot => pl_lote1);
 
   -- Merma por derrame (no es costo de proyecto)
@@ -224,11 +267,17 @@ begin
     p_notes => 'Derrame en tanque de almacenamiento');
 
   -- Maquinaria (tarifas sin combustible: el diésel sale del inventario)
-  insert into public.machinery (id, organization_id, name, code, kind, hourly_cost, notes) values
-    (m_tractor,    v_org, 'Tractor John Deere 6110', 'TR-01', 'tractor',    650, 'Incluye operador y depreciación; sin combustible.'),
-    (m_sembradora, v_org, 'Sembradora de precisión 6 surcos', 'SM-01', 'implemento', 280, null),
-    (m_aspersora,  v_org, 'Aspersora de aguilón 600 l', 'AS-01', 'aspersora',  180, null),
-    (m_camion,     v_org, 'Camión Ford F-450 redilas', 'CM-01', 'vehiculo',   350, null);
+  insert into public.machinery (id, organization_id, name, code, kind, brand, model, serial_number, acquisition_date,
+                                acquisition_cost, responsible_id, rate_basis, hourly_cost, daily_rate,
+                                maintenance_interval_hours, maintenance_interval_days, notes) values
+    (m_tractor,    v_org, 'Tractor John Deere 6110', 'TR-01', 'tractor', 'John Deere', '6110J', '1PY6110JLKB001234', '2020-03-10',
+     1450000, e_1, 'hora', 650, null, 250, 180, 'Incluye operador y depreciación; sin combustible.'),
+    (m_sembradora, v_org, 'Sembradora de precisión 6 surcos', 'SM-01', 'implemento', 'Gaspardo', 'MTE-R 6', 'GS-88120', '2021-01-20',
+     380000, e_1, 'hora', 280, null, null, 365, null),
+    (m_aspersora,  v_org, 'Aspersora de aguilón 600 l', 'AS-01', 'aspersora', 'Swissmex', 'Aguilón 600', null, '2022-05-02',
+     95000, e_2, 'jornada', 180, 1200, 40, null, 'Se renta por jornada a proyectos.'),
+    (m_camion,     v_org, 'Camión Ford F-450 redilas', 'CM-01', 'vehiculo', 'Ford', 'F-450 2019', '1FDUF4GT5KEC12345', '2019-08-30',
+     780000, e_4, 'hora', 350, null, 300, 120, null);
 
   insert into public.machinery_usage (organization_id, machine_id, project_id, plot_id, usage_date, hours, operator, activity) values
     (v_org, m_tractor,    p_maiz, pl_sur,   d - 115, 22, 'Pedro Sánchez', 'Barbecho y rastreo'),
@@ -245,12 +294,6 @@ begin
     (v_org, m_camion,     p_broc, null,     d - 15, 6,  'Raúl Díaz',     'Acarreo de cosecha a empaque');
 
   -- Personal y mano de obra (máximo un jornal por empleado y día)
-  insert into public.employees (id, organization_id, full_name, position, phone, daily_wage) values
-    (e_1, v_org, 'Pedro Sánchez Luna',   'Tractorista',          '462 555 0201', 450),
-    (e_2, v_org, 'Miguel Ortega Ruiz',   'Aplicador',            '462 555 0202', 400),
-    (e_3, v_org, 'Rosa María Vega',      'Jornalera',            null,           350),
-    (e_4, v_org, 'Raúl Díaz Hernández',  'Chofer',               '462 555 0204', 420);
-
   for k in 0..9 loop
     insert into public.labor_records (organization_id, project_id, plot_id, employee_id, work_date, activity, quantity) values
       (v_org, p_maiz, pl_sur, e_3, d - 100 + k * 3, 'Deshierbe y aporque', 1),
@@ -309,6 +352,84 @@ begin
   perform public.register_payment(gen_random_uuid(), s_1, d - 5, 100000, 'transferencia', 'SPEI 0035120');
   perform public.register_payment(gen_random_uuid(), s_2, d - 8, 200000, 'transferencia', 'SPEI 7712');
   perform public.register_payment(gen_random_uuid(), s_2, d - 2, 107000, 'cheque', 'Cheque 004581');
+
+  -- ===========================================================================
+  -- Control operativo: almacenes, bitácoras, maquinaria y personal
+  -- ===========================================================================
+
+  -- Segundo almacén y transferencia de diésel (no cambia el valor ni los costos)
+  insert into public.warehouses (id, organization_id, name, code, farm_id, location, responsible_id) values
+    (w_norte, v_org, 'Bodega La Esperanza', 'BG-ESP', '00000000-0000-4000-a100-000000000002', 'Junto al pivote del Lote 1', e_4);
+  perform public.register_inventory_movement(gen_random_uuid(), i_diesel, 'transferencia', d - 9, 800,
+    p_warehouse => w_general,
+    p_to_warehouse => w_norte, p_responsible => e_4, p_notes => 'Abasto para cosecha de brócoli');
+
+  -- Aplicaciones (el producto sale del almacén en la misma operación)
+  perform public.register_chemical_application('00000000-0000-4000-ad00-000000000001', p_broc, pl_lote1, d - 40, i_fungi, 50, 20,
+    p_warehouse => w_general, p_lot_number => 'CL720-2401', p_time => '07:30', p_active_ingredient => 'Clorotalonil 720 g/l', p_responsible => e_2,
+    p_machine => m_aspersora, p_reentry_hours => 48, p_preharvest_days => 7, p_notes => 'Prevención de mildiu');
+  perform public.register_chemical_application('00000000-0000-4000-ad00-000000000002', p_jito, pl_norte, d - 20, i_fungi, 36, 12,
+    p_warehouse => w_general, p_lot_number => 'CL720-2401', p_time => '06:45', p_active_ingredient => 'Clorotalonil 720 g/l', p_responsible => e_2,
+    p_machine => m_aspersora, p_reentry_hours => 48, p_preharvest_days => 7);
+  perform public.register_chemical_application('00000000-0000-4000-ad00-000000000003', p_jito, pl_norte, d - 10, i_bio, 4, 6,
+    p_warehouse => w_general, p_lot_number => 'TH-0925', p_time => '17:00', p_active_ingredient => 'Trichoderma harzianum', p_responsible => e_2, p_equipment => 'Drench por sistema de goteo');
+
+  -- Riegos
+  insert into public.irrigation_logs (id, organization_id, project_id, plot_id, log_date, start_time, end_time, irrigation_system, water_m3, responsible_id, notes) values
+    ('00000000-0000-4000-ae00-000000000001', v_org, p_maiz, pl_sur,   d - 75, '06:00', '14:00', 'gravedad', 2400, e_1, 'Riego de auxilio'),
+    ('00000000-0000-4000-ae00-000000000002', v_org, p_maiz, pl_bajio, d - 74, '20:00', '04:00', 'aspersion', 1100, e_1, 'Riego nocturno'),
+    ('00000000-0000-4000-ae00-000000000003', v_org, p_jito, pl_norte, d - 30, '07:00', '09:30', 'goteo', 180, e_2, null),
+    ('00000000-0000-4000-ae00-000000000004', v_org, p_jito, pl_norte, d - 25, '07:00', '09:30', 'goteo', 185, e_2, null),
+    ('00000000-0000-4000-ae00-000000000005', v_org, p_jito, pl_norte, d - 20, '07:00', '10:00', 'goteo', null, e_2, 'Fertirriego'),
+    ('00000000-0000-4000-ae00-000000000006', v_org, p_broc, pl_lote1, d - 45, '05:00', '11:00', 'pivote', 1600, e_4, null),
+    ('00000000-0000-4000-ae00-000000000007', v_org, p_broc, pl_lote1, d - 30, '05:00', '10:30', 'pivote', 1450, e_4, null);
+
+  -- Actividades de campo (costo solo si no está en otro módulo)
+  insert into public.field_activities (id, organization_id, project_id, plot_id, activity_type_id, activity_date, description, responsible_id, cost, notes)
+  select x.id, v_org, x.project_id, x.plot_id, t.id, x.activity_date, x.description, x.responsible_id, x.cost, x.notes
+  from (values
+    ('00000000-0000-4000-af00-000000000001'::uuid, p_maiz, pl_sur, 'Preparación de terreno', d - 116, 'Barbecho, rastra y surcado', e_1, 0::numeric, 'Tractor registrado en Maquinaria'),
+    ('00000000-0000-4000-af00-000000000002'::uuid, p_maiz, null, 'Siembra', d - 104, 'Siembra a 80 cm entre surcos', e_1, 0, null),
+    ('00000000-0000-4000-af00-000000000003'::uuid, p_maiz, pl_bajio, 'Deshierbe', d - 65, 'Deshierbe mecánico con servicio contratado', null, 6800, 'Servicio externo; no incluye jornales propios'),
+    ('00000000-0000-4000-af00-000000000004'::uuid, p_jito, pl_norte, 'Trasplante', d - 40, 'Trasplante a doble hilera', e_3, 0, null),
+    ('00000000-0000-4000-af00-000000000005'::uuid, p_jito, pl_norte, 'Poda', d - 12, 'Poda de brotes laterales', e_3, 0, null),
+    ('00000000-0000-4000-af00-000000000006'::uuid, p_broc, pl_lote1, 'Control fitosanitario', d - 41, 'Monitoreo de plagas previo a aplicación', e_2, 0, 'Presencia baja de palomilla dorso de diamante')
+  ) as x(id, project_id, plot_id, type_name, activity_date, description, responsible_id, cost, notes)
+  join public.activity_types t on t.organization_id = v_org and t.name = x.type_name;
+
+  -- Uso de maquinaria con combustible surtido del almacén y uso por jornada
+  perform public.register_machinery_usage(gen_random_uuid(), m_tractor, p_maiz, d - 30, 6, pl_sur,
+    p_operator_id => e_1, p_activity => 'Cultivo y aporque',
+    p_activity_type => (select id from public.activity_types where organization_id = v_org and name = 'Deshierbe'),
+    p_fuel_quantity => 60, p_fuel_product => i_diesel, p_fuel_warehouse => w_general);
+  perform public.register_machinery_usage(gen_random_uuid(), m_aspersora, p_jito, d - 10, 4, pl_norte,
+    p_rate_basis => 'jornada', p_jornadas => 0.5, p_operator_id => e_2, p_activity => 'Aplicación de biológico');
+
+  -- Mantenimientos (costo del equipo, no de los proyectos)
+  insert into public.machinery_maintenance (id, organization_id, machine_id, maintenance_date, kind, description, provider, cost, hour_meter, responsible_id) values
+    ('00000000-0000-4000-b100-000000000001', v_org, m_tractor, d - 125, 'preventivo', 'Servicio de 250 h: aceite, filtros y engrase', 'Agromaquinaria del Bajío', 8600, 3120, e_1),
+    ('00000000-0000-4000-b100-000000000002', v_org, m_aspersora, d - 28, 'correctivo', 'Cambio de boquillas y manguera de presión', null, 2350, null, e_2),
+    ('00000000-0000-4000-b100-000000000003', v_org, m_camion, d - 140, 'preventivo', 'Afinación y cambio de llantas traseras', 'Servicio Ford Irapuato', 14900, null, e_4);
+
+  -- Cuadrilla, asignaciones, jornada de cuadrilla y asistencia
+  insert into public.crews (id, organization_id, name, leader_id, notes) values
+    ('00000000-0000-4000-b200-000000000001', v_org, 'Cuadrilla La Esperanza', e_3, 'Corte y labores manuales de brócoli');
+  insert into public.crew_members (organization_id, crew_id, employee_id) values
+    (v_org, '00000000-0000-4000-b200-000000000001', e_3),
+    (v_org, '00000000-0000-4000-b200-000000000001', e_5),
+    (v_org, '00000000-0000-4000-b200-000000000001', e_6);
+  insert into public.employee_assignments (organization_id, employee_id, project_id, plot_id, crew_id, start_date, role) values
+    (v_org, e_2, p_jito, pl_norte, null, d - 50, 'Aplicador y tutoreo'),
+    (v_org, e_3, p_broc, pl_lote1, '00000000-0000-4000-b200-000000000001', d - 30, 'Jefa de cuadrilla'),
+    (v_org, e_5, p_broc, pl_lote1, '00000000-0000-4000-b200-000000000001', d - 30, null),
+    (v_org, e_6, p_broc, pl_lote1, '00000000-0000-4000-b200-000000000001', d - 30, null);
+  insert into public.attendance_records (organization_id, employee_id, work_date, status, notes) values
+    (v_org, e_5, d - 3, 'falta', 'Sin aviso');
+  perform public.register_crew_labor('00000000-0000-4000-b300-000000000001', '00000000-0000-4000-b200-000000000001', p_broc,
+    d - 4, 'Deshierbe manual entre camas', 1, p_plot => pl_lote1,
+    p_activity_type => (select id from public.activity_types where organization_id = v_org and name = 'Deshierbe'));
+  perform public.register_crew_labor('00000000-0000-4000-b300-000000000002', '00000000-0000-4000-b200-000000000001', p_broc,
+    d - 3, 'Deshierbe manual entre camas', 1, p_plot => pl_lote1, p_employees => array[e_3, e_6]);
 
   perform set_config('request.jwt.claims', '', true);
 end;

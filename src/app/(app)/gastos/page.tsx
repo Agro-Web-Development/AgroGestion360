@@ -74,12 +74,13 @@ export default async function ExpensesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-4 sm:grid-cols-4">
+          <dl className="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
             {[
               ["Insumos consumidos", summary.inputs_cost],
               ["Maquinaria", summary.machinery_cost],
               ["Mano de obra", summary.labor_cost],
               ["Gastos directos", summary.expenses_cost],
+              ["Actividades de campo", summary.activities_cost],
             ].map(([label, value]) => (
               <div key={label as string}>
                 <dt className="text-sm text-muted-foreground">{label}</dt>

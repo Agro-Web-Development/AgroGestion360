@@ -33,7 +33,7 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   otros: "Otros",
 }
 
-export const COST_SOURCES = ["insumos", "maquinaria", "mano_obra", "gastos"] as const
+export const COST_SOURCES = ["insumos", "maquinaria", "mano_obra", "gastos", "actividades"] as const
 export type CostSource = (typeof COST_SOURCES)[number]
 
 export const COST_SOURCE_LABELS: Record<CostSource, string> = {
@@ -41,6 +41,7 @@ export const COST_SOURCE_LABELS: Record<CostSource, string> = {
   maquinaria: "Maquinaria",
   mano_obra: "Mano de obra",
   gastos: "Gastos directos",
+  actividades: "Actividades de campo",
 }
 
 export const expenseSchema = z

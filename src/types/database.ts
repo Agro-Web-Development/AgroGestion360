@@ -23,7 +23,73 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "audit_logs": {
+            "activity_types": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"organization_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_types_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"attachments": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"entity_id": string,"entity_type": string,"file_name": string,"id": string,"mime_type": string,"organization_id": string,"size_bytes": number,"storage_path": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"entity_id": string,"entity_type": string,"file_name": string,"id"?: string,"mime_type": string,"organization_id": string,"size_bytes": number,"storage_path": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"entity_id"?: string,"entity_type"?: string,"file_name"?: string,"id"?: string,"mime_type"?: string,"organization_id"?: string,"size_bytes"?: number,"storage_path"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attachments_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"attendance_records": {
+                  Row: {
+                    "check_in": string | null,"check_out": string | null,"created_at": string,"created_by": string | null,"employee_id": string,"id": string,"notes": string | null,"organization_id": string,"status": Database["public"]['Enums']["attendance_status"],"updated_at": string,"updated_by": string | null,"work_date": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "check_in"?: string | null,"check_out"?: string | null,"created_at"?: string,"created_by"?: string | null,"employee_id": string,"id"?: string,"notes"?: string | null,"organization_id": string,"status"?: Database["public"]['Enums']["attendance_status"],"updated_at"?: string,"updated_by"?: string | null,"work_date": string
+                  }
+                  Update: {
+                    "check_in"?: string | null,"check_out"?: string | null,"created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"id"?: string,"notes"?: string | null,"organization_id"?: string,"status"?: Database["public"]['Enums']["attendance_status"],"updated_at"?: string,"updated_by"?: string | null,"work_date"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attendance_records_organization_id_employee_id_fkey"
+      columns: ["organization_id","employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "attendance_records_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"audit_logs": {
                   Row: {
                     "action": string,"actor_id": string | null,"created_at": string,"id": number,"new_data": Json | null,"old_data": Json | null,"organization_id": string | null,"record_id": string | null,"table_name": string
                   }
@@ -41,6 +107,138 @@ export type Database = {
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"chemical_applications": {
+                  Row: {
+                    "active_ingredient": string | null,"application_date": string,"application_time": string | null,"cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"created_at": string,"created_by": string | null,"equipment": string | null,"id": string,"inventory_movement_id": string | null,"lot_id": string | null,"lot_number": string | null,"machine_id": string | null,"notes": string | null,"organization_id": string,"plot_id": string,"preharvest_days": number | null,"product_id": string,"project_id": string,"quantity": number,"reentry_hours": number | null,"responsible_id": string | null,"status": Database["public"]['Enums']["log_status"],"treated_area_ha": number,"unit": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active_ingredient"?: string | null,"application_date": string,"application_time"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"created_by"?: string | null,"equipment"?: string | null,"id": string,"inventory_movement_id"?: string | null,"lot_id"?: string | null,"lot_number"?: string | null,"machine_id"?: string | null,"notes"?: string | null,"organization_id": string,"plot_id": string,"preharvest_days"?: number | null,"product_id": string,"project_id": string,"quantity": number,"reentry_hours"?: number | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"treated_area_ha": number,"unit": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "active_ingredient"?: string | null,"application_date"?: string,"application_time"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"created_by"?: string | null,"equipment"?: string | null,"id"?: string,"inventory_movement_id"?: string | null,"lot_id"?: string | null,"lot_number"?: string | null,"machine_id"?: string | null,"notes"?: string | null,"organization_id"?: string,"plot_id"?: string,"preharvest_days"?: number | null,"product_id"?: string,"project_id"?: string,"quantity"?: number,"reentry_hours"?: number | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"treated_area_ha"?: number,"unit"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chemical_applications_inventory_movement_id_fkey"
+      columns: ["inventory_movement_id"]
+isOneToOne: true
+      referencedRelation: "inventory_movements"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_machine_id_fkey"
+      columns: ["organization_id","machine_id"]
+isOneToOne: false
+      referencedRelation: "machinery"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_machine_id_fkey"
+      columns: ["organization_id","machine_id"]
+isOneToOne: false
+      referencedRelation: "v_machinery_status"
+      referencedColumns: ["organization_id","machine_id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "inventory_products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "chemical_applications_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "chemical_applications_product_id_lot_id_fkey"
+      columns: ["product_id","lot_id"]
+isOneToOne: false
+      referencedRelation: "inventory_lots"
+      referencedColumns: ["product_id","id"]
+    },{
+      foreignKeyName: "chemical_applications_project_id_plot_id_fkey"
+      columns: ["project_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "project_plots"
+      referencedColumns: ["project_id","plot_id"]
+    }
+                  ]
+                },"crew_members": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"crew_id": string,"employee_id": string,"id": string,"organization_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"crew_id": string,"employee_id": string,"id"?: string,"organization_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"crew_id"?: string,"employee_id"?: string,"id"?: string,"organization_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "crew_members_organization_id_crew_id_fkey"
+      columns: ["organization_id","crew_id"]
+isOneToOne: false
+      referencedRelation: "crews"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "crew_members_organization_id_employee_id_fkey"
+      columns: ["organization_id","employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "crew_members_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"crews": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"leader_id": string | null,"name": string,"notes": string | null,"organization_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"leader_id"?: string | null,"name": string,"notes"?: string | null,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"leader_id"?: string | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "crews_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "crews_organization_id_leader_id_fkey"
+      columns: ["organization_id","leader_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"crops": {
@@ -83,16 +281,66 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"employees": {
+                },"employee_assignments": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"daily_wage": number,"full_name": string,"id": string,"is_active": boolean,"notes": string | null,"organization_id": string,"phone": string | null,"position": string | null,"updated_at": string,"updated_by": string | null
+                    "created_at": string,"created_by": string | null,"crew_id": string | null,"employee_id": string,"end_date": string | null,"id": string,"notes": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"role": string | null,"start_date": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"daily_wage": number,"full_name": string,"id"?: string,"is_active"?: boolean,"notes"?: string | null,"organization_id": string,"phone"?: string | null,"position"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                    "created_at"?: string,"created_by"?: string | null,"crew_id"?: string | null,"employee_id": string,"end_date"?: string | null,"id"?: string,"notes"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"role"?: string | null,"start_date": string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"daily_wage"?: number,"full_name"?: string,"id"?: string,"is_active"?: boolean,"notes"?: string | null,"organization_id"?: string,"phone"?: string | null,"position"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                    "created_at"?: string,"created_by"?: string | null,"crew_id"?: string | null,"employee_id"?: string,"end_date"?: string | null,"id"?: string,"notes"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"role"?: string | null,"start_date"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "employee_assignments_organization_id_crew_id_fkey"
+      columns: ["organization_id","crew_id"]
+isOneToOne: false
+      referencedRelation: "crews"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "employee_assignments_organization_id_employee_id_fkey"
+      columns: ["organization_id","employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "employee_assignments_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "employee_assignments_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "employee_assignments_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "employee_assignments_project_id_plot_id_fkey"
+      columns: ["project_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "project_plots"
+      referencedColumns: ["project_id","plot_id"]
+    }
+                  ]
+                },"employees": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"daily_wage": number,"full_name": string,"hire_date": string | null,"id": string,"is_active": boolean,"notes": string | null,"organization_id": string,"phone": string | null,"position": string | null,"updated_at": string,"updated_by": string | null,"worker_type": Database["public"]['Enums']["worker_type"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"daily_wage": number,"full_name": string,"hire_date"?: string | null,"id"?: string,"is_active"?: boolean,"notes"?: string | null,"organization_id": string,"phone"?: string | null,"position"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"worker_type"?: Database["public"]['Enums']["worker_type"]
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"daily_wage"?: number,"full_name"?: string,"hire_date"?: string | null,"id"?: string,"is_active"?: boolean,"notes"?: string | null,"organization_id"?: string,"phone"?: string | null,"position"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"worker_type"?: Database["public"]['Enums']["worker_type"]
                   }
                   Relationships: [
                     {
@@ -121,6 +369,56 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"field_activities": {
+                  Row: {
+                    "activity_date": string,"activity_type_id": string,"cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"cost": number,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"notes": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"responsible_id": string | null,"status": Database["public"]['Enums']["log_status"],"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity_date": string,"activity_type_id": string,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"cost"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id": string,"notes"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "activity_date"?: string,"activity_type_id"?: string,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"cost"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"notes"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "field_activities_organization_id_activity_type_id_fkey"
+      columns: ["organization_id","activity_type_id"]
+isOneToOne: false
+      referencedRelation: "activity_types"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "field_activities_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_activities_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "field_activities_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "field_activities_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "field_activities_project_id_plot_id_fkey"
+      columns: ["project_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "project_plots"
+      referencedColumns: ["project_id","plot_id"]
     }
                   ]
                 },"harvests": {
@@ -161,16 +459,100 @@ isOneToOne: false
       referencedColumns: ["project_id","plot_id"]
     }
                   ]
-                },"inventory_movements": {
+                },"inventory_balances": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"movement_date": string,"movement_type": Database["public"]['Enums']["inventory_movement_type"],"notes": string | null,"organization_id": string,"plot_id": string | null,"product_id": string,"project_id": string | null,"quantity": number,"reference": string | null,"reverses_id": string | null,"stock_after": number,"supplier": string | null,"total_cost": number,"unit_cost": number | null
+                    "id": string,"lot_id": string | null,"organization_id": string,"product_id": string,"quantity": number,"updated_at": string,"warehouse_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id": string,"movement_date": string,"movement_type": Database["public"]['Enums']["inventory_movement_type"],"notes"?: string | null,"organization_id": string,"plot_id"?: string | null,"product_id": string,"project_id"?: string | null,"quantity": number,"reference"?: string | null,"reverses_id"?: string | null,"stock_after": number,"supplier"?: string | null,"total_cost": number,"unit_cost"?: never
+                    "id"?: string,"lot_id"?: string | null,"organization_id": string,"product_id": string,"quantity"?: number,"updated_at"?: string,"warehouse_id": string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"movement_date"?: string,"movement_type"?: Database["public"]['Enums']["inventory_movement_type"],"notes"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"product_id"?: string,"project_id"?: string | null,"quantity"?: number,"reference"?: string | null,"reverses_id"?: string | null,"stock_after"?: number,"supplier"?: string | null,"total_cost"?: number,"unit_cost"?: never
+                    "id"?: string,"lot_id"?: string | null,"organization_id"?: string,"product_id"?: string,"quantity"?: number,"updated_at"?: string,"warehouse_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inventory_balances_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inventory_balances_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "inventory_products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_balances_organization_id_warehouse_id_fkey"
+      columns: ["organization_id","warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_balances_product_id_lot_id_fkey"
+      columns: ["product_id","lot_id"]
+isOneToOne: false
+      referencedRelation: "inventory_lots"
+      referencedColumns: ["product_id","id"]
+    }
+                  ]
+                },"inventory_categories": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"kind": Database["public"]['Enums']["input_kind"],"name": string,"organization_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["input_kind"],"name": string,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["input_kind"],"name"?: string,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inventory_categories_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"inventory_lots": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"expiry_date": string | null,"id": string,"lot_number": string,"notes": string | null,"organization_id": string,"product_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"expiry_date"?: string | null,"id"?: string,"lot_number": string,"notes"?: string | null,"organization_id": string,"product_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"expiry_date"?: string | null,"id"?: string,"lot_number"?: string,"notes"?: string | null,"organization_id"?: string,"product_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inventory_lots_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inventory_lots_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "inventory_products"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"inventory_movements": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"lot_id": string | null,"movement_date": string,"movement_type": Database["public"]['Enums']["inventory_movement_type"],"notes": string | null,"organization_id": string,"plot_id": string | null,"product_id": string,"project_id": string | null,"quantity": number,"reference": string | null,"responsible_id": string | null,"reverses_id": string | null,"stock_after": number,"supplier_id": string | null,"to_warehouse_id": string | null,"total_cost": number,"unit": string,"unit_cost": number | null,"warehouse_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id": string,"lot_id"?: string | null,"movement_date": string,"movement_type": Database["public"]['Enums']["inventory_movement_type"],"notes"?: string | null,"organization_id": string,"plot_id"?: string | null,"product_id": string,"project_id"?: string | null,"quantity": number,"reference"?: string | null,"responsible_id"?: string | null,"reverses_id"?: string | null,"stock_after": number,"supplier_id"?: string | null,"to_warehouse_id"?: string | null,"total_cost": number,"unit": string,"unit_cost"?: never,"warehouse_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"lot_id"?: string | null,"movement_date"?: string,"movement_type"?: Database["public"]['Enums']["inventory_movement_type"],"notes"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"product_id"?: string,"project_id"?: string | null,"quantity"?: number,"reference"?: string | null,"responsible_id"?: string | null,"reverses_id"?: string | null,"stock_after"?: number,"supplier_id"?: string | null,"to_warehouse_id"?: string | null,"total_cost"?: number,"unit"?: string,"unit_cost"?: never,"warehouse_id"?: string
                   }
                   Relationships: [
                     {
@@ -198,6 +580,36 @@ isOneToOne: false
       referencedRelation: "v_project_costs"
       referencedColumns: ["organization_id","project_id"]
     },{
+      foreignKeyName: "inventory_movements_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_movements_organization_id_supplier_id_fkey"
+      columns: ["organization_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_movements_organization_id_to_warehouse_id_fkey"
+      columns: ["organization_id","to_warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_movements_organization_id_warehouse_id_fkey"
+      columns: ["organization_id","warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_movements_product_id_lot_id_fkey"
+      columns: ["product_id","lot_id"]
+isOneToOne: false
+      referencedRelation: "inventory_lots"
+      referencedColumns: ["product_id","id"]
+    },{
       foreignKeyName: "inventory_movements_project_id_plot_id_fkey"
       columns: ["project_id","plot_id"]
 isOneToOne: false
@@ -213,17 +625,23 @@ isOneToOne: true
                   ]
                 },"inventory_products": {
                   Row: {
-                    "avg_cost": number | null,"category": Database["public"]['Enums']["input_category"],"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"min_stock": number | null,"name": string,"notes": string | null,"organization_id": string,"sku": string | null,"stock": number,"stock_value": number,"unit": string,"updated_at": string,"updated_by": string | null
+                    "avg_cost": number | null,"category_id": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"min_stock": number | null,"name": string,"notes": string | null,"organization_id": string,"sku": string | null,"stock": number,"stock_value": number,"track_lots": boolean,"unit": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "avg_cost"?: never,"category"?: Database["public"]['Enums']["input_category"],"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"min_stock"?: number | null,"name": string,"notes"?: string | null,"organization_id": string,"sku"?: string | null,"stock"?: number,"stock_value"?: number,"unit": string,"updated_at"?: string,"updated_by"?: string | null
+                    "avg_cost"?: never,"category_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"min_stock"?: number | null,"name": string,"notes"?: string | null,"organization_id": string,"sku"?: string | null,"stock"?: number,"stock_value"?: number,"track_lots"?: boolean,"unit": string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "avg_cost"?: never,"category"?: Database["public"]['Enums']["input_category"],"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"min_stock"?: number | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"sku"?: string | null,"stock"?: number,"stock_value"?: number,"unit"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "avg_cost"?: never,"category_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"min_stock"?: number | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"sku"?: string | null,"stock"?: number,"stock_value"?: number,"track_lots"?: boolean,"unit"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "inventory_products_organization_id_category_id_fkey"
+      columns: ["organization_id","category_id"]
+isOneToOne: false
+      referencedRelation: "inventory_categories"
+      referencedColumns: ["organization_id","id"]
+    },{
       foreignKeyName: "inventory_products_organization_id_fkey"
       columns: ["organization_id"]
 isOneToOne: false
@@ -251,19 +669,75 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"labor_records": {
+                },"irrigation_logs": {
                   Row: {
-                    "activity": string,"amount": number | null,"created_at": string,"created_by": string | null,"crew": string | null,"employee_id": string | null,"id": string,"notes": string | null,"organization_id": string,"pay_type": Database["public"]['Enums']["labor_pay_type"],"plot_id": string | null,"project_id": string,"quantity": number,"unit_label": string | null,"unit_rate": number,"updated_at": string,"updated_by": string | null,"work_date": string
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"created_at": string,"created_by": string | null,"duration_minutes": number | null,"end_time": string,"id": string,"irrigation_system": Database["public"]['Enums']["irrigation_type"],"log_date": string,"notes": string | null,"organization_id": string,"plot_id": string,"project_id": string,"responsible_id": string | null,"start_time": string,"status": Database["public"]['Enums']["log_status"],"updated_at": string,"updated_by": string | null,"water_m3": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "activity": string,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"crew"?: string | null,"employee_id"?: string | null,"id"?: string,"notes"?: string | null,"organization_id": string,"pay_type"?: Database["public"]['Enums']["labor_pay_type"],"plot_id"?: string | null,"project_id": string,"quantity": number,"unit_label"?: string | null,"unit_rate": number,"updated_at"?: string,"updated_by"?: string | null,"work_date": string
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_minutes"?: never,"end_time": string,"id": string,"irrigation_system": Database["public"]['Enums']["irrigation_type"],"log_date": string,"notes"?: string | null,"organization_id": string,"plot_id": string,"project_id": string,"responsible_id"?: string | null,"start_time": string,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null,"water_m3"?: number | null
                   }
                   Update: {
-                    "activity"?: string,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"crew"?: string | null,"employee_id"?: string | null,"id"?: string,"notes"?: string | null,"organization_id"?: string,"pay_type"?: Database["public"]['Enums']["labor_pay_type"],"plot_id"?: string | null,"project_id"?: string,"quantity"?: number,"unit_label"?: string | null,"unit_rate"?: number,"updated_at"?: string,"updated_by"?: string | null,"work_date"?: string
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_minutes"?: never,"end_time"?: string,"id"?: string,"irrigation_system"?: Database["public"]['Enums']["irrigation_type"],"log_date"?: string,"notes"?: string | null,"organization_id"?: string,"plot_id"?: string,"project_id"?: string,"responsible_id"?: string | null,"start_time"?: string,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null,"water_m3"?: number | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "irrigation_logs_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "irrigation_logs_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "irrigation_logs_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "irrigation_logs_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "irrigation_logs_project_id_plot_id_fkey"
+      columns: ["project_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "project_plots"
+      referencedColumns: ["project_id","plot_id"]
+    }
+                  ]
+                },"labor_records": {
+                  Row: {
+                    "activity": string,"activity_type_id": string | null,"amount": number | null,"batch_id": string | null,"created_at": string,"created_by": string | null,"crew": string | null,"crew_id": string | null,"employee_id": string | null,"id": string,"notes": string | null,"organization_id": string,"pay_type": Database["public"]['Enums']["labor_pay_type"],"plot_id": string | null,"project_id": string,"quantity": number,"unit_label": string | null,"unit_rate": number,"updated_at": string,"updated_by": string | null,"work_date": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity": string,"activity_type_id"?: string | null,"amount"?: never,"batch_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"crew"?: string | null,"crew_id"?: string | null,"employee_id"?: string | null,"id"?: string,"notes"?: string | null,"organization_id": string,"pay_type"?: Database["public"]['Enums']["labor_pay_type"],"plot_id"?: string | null,"project_id": string,"quantity": number,"unit_label"?: string | null,"unit_rate": number,"updated_at"?: string,"updated_by"?: string | null,"work_date": string
+                  }
+                  Update: {
+                    "activity"?: string,"activity_type_id"?: string | null,"amount"?: never,"batch_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"crew"?: string | null,"crew_id"?: string | null,"employee_id"?: string | null,"id"?: string,"notes"?: string | null,"organization_id"?: string,"pay_type"?: Database["public"]['Enums']["labor_pay_type"],"plot_id"?: string | null,"project_id"?: string,"quantity"?: number,"unit_label"?: string | null,"unit_rate"?: number,"updated_at"?: string,"updated_by"?: string | null,"work_date"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "labor_records_organization_id_activity_type_id_fkey"
+      columns: ["organization_id","activity_type_id"]
+isOneToOne: false
+      referencedRelation: "activity_types"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "labor_records_organization_id_crew_id_fkey"
+      columns: ["organization_id","crew_id"]
+isOneToOne: false
+      referencedRelation: "crews"
+      referencedColumns: ["organization_id","id"]
+    },{
       foreignKeyName: "labor_records_organization_id_employee_id_fkey"
       columns: ["organization_id","employee_id"]
 isOneToOne: false
@@ -297,14 +771,14 @@ isOneToOne: false
                   ]
                 },"machinery": {
                   Row: {
-                    "code": string | null,"created_at": string,"created_by": string | null,"hourly_cost": number,"id": string,"is_active": boolean,"kind": Database["public"]['Enums']["machine_kind"],"name": string,"notes": string | null,"organization_id": string,"updated_at": string,"updated_by": string | null
+                    "acquisition_cost": number | null,"acquisition_date": string | null,"brand": string | null,"code": string | null,"created_at": string,"created_by": string | null,"daily_rate": number | null,"hourly_cost": number,"id": string,"is_active": boolean | null,"kind": Database["public"]['Enums']["machine_kind"],"maintenance_interval_days": number | null,"maintenance_interval_hours": number | null,"model": string | null,"name": string,"notes": string | null,"organization_id": string,"rate_basis": Database["public"]['Enums']["machine_rate_basis"],"responsible_id": string | null,"serial_number": string | null,"status": Database["public"]['Enums']["machine_status"],"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "code"?: string | null,"created_at"?: string,"created_by"?: string | null,"hourly_cost": number,"id"?: string,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["machine_kind"],"name": string,"notes"?: string | null,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
+                    "acquisition_cost"?: number | null,"acquisition_date"?: string | null,"brand"?: string | null,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"daily_rate"?: number | null,"hourly_cost": number,"id"?: string,"is_active"?: never,"kind"?: Database["public"]['Enums']["machine_kind"],"maintenance_interval_days"?: number | null,"maintenance_interval_hours"?: number | null,"model"?: string | null,"name": string,"notes"?: string | null,"organization_id": string,"rate_basis"?: Database["public"]['Enums']["machine_rate_basis"],"responsible_id"?: string | null,"serial_number"?: string | null,"status"?: Database["public"]['Enums']["machine_status"],"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "code"?: string | null,"created_at"?: string,"created_by"?: string | null,"hourly_cost"?: number,"id"?: string,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["machine_kind"],"name"?: string,"notes"?: string | null,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "acquisition_cost"?: number | null,"acquisition_date"?: string | null,"brand"?: string | null,"code"?: string | null,"created_at"?: string,"created_by"?: string | null,"daily_rate"?: number | null,"hourly_cost"?: number,"id"?: string,"is_active"?: never,"kind"?: Database["public"]['Enums']["machine_kind"],"maintenance_interval_days"?: number | null,"maintenance_interval_hours"?: number | null,"model"?: string | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"rate_basis"?: Database["public"]['Enums']["machine_rate_basis"],"responsible_id"?: string | null,"serial_number"?: string | null,"status"?: Database["public"]['Enums']["machine_status"],"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -313,21 +787,77 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "machinery_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"machinery_maintenance": {
+                  Row: {
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"cost": number,"created_at": string,"created_by": string | null,"description": string,"hour_meter": number | null,"id": string,"kind": Database["public"]['Enums']["maintenance_kind"],"machine_id": string,"maintenance_date": string,"notes": string | null,"organization_id": string,"provider": string | null,"responsible_id": string | null,"status": Database["public"]['Enums']["log_status"],"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"cost"?: number,"created_at"?: string,"created_by"?: string | null,"description": string,"hour_meter"?: number | null,"id": string,"kind"?: Database["public"]['Enums']["maintenance_kind"],"machine_id": string,"maintenance_date": string,"notes"?: string | null,"organization_id": string,"provider"?: string | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"cost"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string,"hour_meter"?: number | null,"id"?: string,"kind"?: Database["public"]['Enums']["maintenance_kind"],"machine_id"?: string,"maintenance_date"?: string,"notes"?: string | null,"organization_id"?: string,"provider"?: string | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "machinery_maintenance_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "machinery_maintenance_organization_id_machine_id_fkey"
+      columns: ["organization_id","machine_id"]
+isOneToOne: false
+      referencedRelation: "machinery"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "machinery_maintenance_organization_id_machine_id_fkey"
+      columns: ["organization_id","machine_id"]
+isOneToOne: false
+      referencedRelation: "v_machinery_status"
+      referencedColumns: ["organization_id","machine_id"]
+    },{
+      foreignKeyName: "machinery_maintenance_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"machinery_usage": {
                   Row: {
-                    "activity": string | null,"amount": number | null,"created_at": string,"created_by": string | null,"hourly_rate": number,"hours": number,"id": string,"machine_id": string,"notes": string | null,"operator": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"updated_at": string,"updated_by": string | null,"usage_date": string
+                    "activity": string | null,"activity_type_id": string | null,"amount": number | null,"created_at": string,"created_by": string | null,"fuel_movement_id": string | null,"fuel_quantity": number | null,"hours": number,"id": string,"jornadas": number | null,"machine_id": string,"notes": string | null,"operator": string | null,"operator_id": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"rate": number,"rate_basis": Database["public"]['Enums']["machine_rate_basis"],"updated_at": string,"updated_by": string | null,"usage_date": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "activity"?: string | null,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"hourly_rate": number,"hours": number,"id"?: string,"machine_id": string,"notes"?: string | null,"operator"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"updated_at"?: string,"updated_by"?: string | null,"usage_date": string
+                    "activity"?: string | null,"activity_type_id"?: string | null,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"fuel_movement_id"?: string | null,"fuel_quantity"?: number | null,"hours": number,"id"?: string,"jornadas"?: number | null,"machine_id": string,"notes"?: string | null,"operator"?: string | null,"operator_id"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"rate": number,"rate_basis"?: Database["public"]['Enums']["machine_rate_basis"],"updated_at"?: string,"updated_by"?: string | null,"usage_date": string
                   }
                   Update: {
-                    "activity"?: string | null,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"hourly_rate"?: number,"hours"?: number,"id"?: string,"machine_id"?: string,"notes"?: string | null,"operator"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"usage_date"?: string
+                    "activity"?: string | null,"activity_type_id"?: string | null,"amount"?: never,"created_at"?: string,"created_by"?: string | null,"fuel_movement_id"?: string | null,"fuel_quantity"?: number | null,"hours"?: number,"id"?: string,"jornadas"?: number | null,"machine_id"?: string,"notes"?: string | null,"operator"?: string | null,"operator_id"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"rate"?: number,"rate_basis"?: Database["public"]['Enums']["machine_rate_basis"],"updated_at"?: string,"updated_by"?: string | null,"usage_date"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "machinery_usage_fuel_movement_id_fkey"
+      columns: ["fuel_movement_id"]
+isOneToOne: true
+      referencedRelation: "inventory_movements"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "machinery_usage_organization_id_activity_type_id_fkey"
+      columns: ["organization_id","activity_type_id"]
+isOneToOne: false
+      referencedRelation: "activity_types"
+      referencedColumns: ["organization_id","id"]
+    },{
       foreignKeyName: "machinery_usage_organization_id_fkey"
       columns: ["organization_id"]
 isOneToOne: false
@@ -338,6 +868,18 @@ isOneToOne: false
       columns: ["organization_id","machine_id"]
 isOneToOne: false
       referencedRelation: "machinery"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "machinery_usage_organization_id_machine_id_fkey"
+      columns: ["organization_id","machine_id"]
+isOneToOne: false
+      referencedRelation: "v_machinery_status"
+      referencedColumns: ["organization_id","machine_id"]
+    },{
+      foreignKeyName: "machinery_usage_organization_id_operator_id_fkey"
+      columns: ["organization_id","operator_id"]
+isOneToOne: false
+      referencedRelation: "employees"
       referencedColumns: ["organization_id","id"]
     },{
       foreignKeyName: "machinery_usage_organization_id_project_id_fkey"
@@ -683,10 +1225,108 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"suppliers": {
+                  Row: {
+                    "address": string | null,"contact_name": string | null,"created_at": string,"created_by": string | null,"email": string | null,"id": string,"is_active": boolean,"name": string,"notes": string | null,"organization_id": string,"phone": string | null,"rfc": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"contact_name"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"notes"?: string | null,"organization_id": string,"phone"?: string | null,"rfc"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "address"?: string | null,"contact_name"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"notes"?: string | null,"organization_id"?: string,"phone"?: string | null,"rfc"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "suppliers_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"warehouses": {
+                  Row: {
+                    "code": string | null,"created_at": string,"created_by": string | null,"farm_id": string | null,"id": string,"is_active": boolean,"location": string | null,"name": string,"notes": string | null,"organization_id": string,"responsible_id": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code"?: string | null,"created_at"?: string,"created_by"?: string | null,"farm_id"?: string | null,"id"?: string,"is_active"?: boolean,"location"?: string | null,"name": string,"notes"?: string | null,"organization_id": string,"responsible_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "code"?: string | null,"created_at"?: string,"created_by"?: string | null,"farm_id"?: string | null,"id"?: string,"is_active"?: boolean,"location"?: string | null,"name"?: string,"notes"?: string | null,"organization_id"?: string,"responsible_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "warehouses_organization_id_farm_id_fkey"
+      columns: ["organization_id","farm_id"]
+isOneToOne: false
+      referencedRelation: "farms"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "warehouses_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "warehouses_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
                 }
           }
           Views: {
-            "v_project_cost_entries": {
+            "v_inventory_stock": {
+                  Row: {
+                    "avg_cost": number | null,"category_id": string,"category_kind": Database["public"]['Enums']["input_kind"],"category_name": string,"days_to_expiry": number | null,"estimated_value": number | null,"expiry_date": string | null,"id": string,"lot_id": string | null,"lot_number": string | null,"organization_id": string,"product_active": boolean,"product_id": string,"product_name": string,"quantity": number,"sku": string | null,"unit": string,"updated_at": string,"warehouse_id": string,"warehouse_name": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "inventory_balances_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inventory_balances_organization_id_product_id_fkey"
+      columns: ["organization_id","product_id"]
+isOneToOne: false
+      referencedRelation: "inventory_products"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_balances_organization_id_warehouse_id_fkey"
+      columns: ["organization_id","warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_balances_product_id_lot_id_fkey"
+      columns: ["product_id","lot_id"]
+isOneToOne: false
+      referencedRelation: "inventory_lots"
+      referencedColumns: ["product_id","id"]
+    }
+                  ]
+                },"v_machinery_status": {
+                  Row: {
+                    "hours_since_service": number | null,"hours_to_service": number | null,"last_service_date": string | null,"last_usage_date": string | null,"machine_id": string,"maintenance_alert": string | null,"maintenance_cost": number | null,"maintenance_count": number | null,"maintenance_interval_days": number | null,"maintenance_interval_hours": number | null,"name": string,"next_service_date": string | null,"organization_id": string,"repair_cost": number | null,"status": Database["public"]['Enums']["machine_status"],"total_hours": number | null,"usage_amount": number | null,"usage_count": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "machinery_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"v_project_cost_entries": {
                   Row: {
                     "amount": number | null,"concept": string | null,"created_at": string | null,"detail": string | null,"entry_date": string | null,"expense_category": Database["public"]['Enums']["expense_category"] | null,"organization_id": string | null,"plot_id": string | null,"project_id": string | null,"source": string | null,"source_id": string | null
                   }
@@ -696,7 +1336,7 @@ isOneToOne: false
                   ]
                 },"v_project_costs": {
                   Row: {
-                    "area_ha": number | null,"available_kg": number | null,"budget_amount": number | null,"budget_used_pct": number | null,"code": string,"collected_amount": number | null,"cost_per_ha": number | null,"cost_per_kg": number | null,"expenses_cost": number | null,"gross_profit": number | null,"harvested_kg": number | null,"inputs_cost": number | null,"labor_cost": number | null,"machinery_cost": number | null,"name": string,"organization_id": string,"project_id": string,"receivable_amount": number | null,"sales_amount": number | null,"sold_kg": number | null,"status": Database["public"]['Enums']["project_status"],"total_cost": number | null,"yield_kg_per_ha": number | null
+                    "activities_cost": number | null,"area_ha": number | null,"available_kg": number | null,"budget_amount": number | null,"budget_used_pct": number | null,"code": string,"collected_amount": number | null,"cost_per_ha": number | null,"cost_per_kg": number | null,"expenses_cost": number | null,"gross_profit": number | null,"harvested_kg": number | null,"inputs_cost": number | null,"labor_cost": number | null,"machinery_cost": number | null,"name": string,"organization_id": string,"project_id": string,"receivable_amount": number | null,"sales_amount": number | null,"sold_kg": number | null,"status": Database["public"]['Enums']["project_status"],"total_cost": number | null,"yield_kg_per_ha": number | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -707,6 +1347,14 @@ isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
     }
+                  ]
+                },"v_project_timeline": {
+                  Row: {
+                    "amount": number | null,"cancelled": boolean | null,"created_at": string | null,"detail": string | null,"event_date": string | null,"event_time": string | null,"kind": string | null,"organization_id": string | null,"plot_id": string | null,"project_id": string | null,"responsible": string | null,"source_id": string | null,"title": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
                   ]
                 },"v_sale_balances": {
                   Row: {
@@ -731,7 +1379,16 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "cancel_invitation":
+            "apply_inventory_balance":
+{ Args: { "p_delta": number,"p_lot": string,"p_product": Omit<Database["public"]['Tables']["inventory_products"]['Row'], Database["public"]['Tables']["inventory_products"]['ComputedFields']>,"p_warehouse": string }; Returns: undefined
+                           },
+"cancel_chemical_application":
+{ Args: { "p_id": string,"p_reason": string }; Returns: undefined
+                           },
+"cancel_field_record":
+{ Args: { "p_id": string,"p_kind": string,"p_reason": string }; Returns: undefined
+                           },
+"cancel_invitation":
 { Args: { "p_invitation": string }; Returns: undefined
                            },
 "cancel_payment":
@@ -810,7 +1467,13 @@ isOneToOne: false
 { Args: { "p_exclude"?: string,"p_plot": string }; Returns: number
                            },
 "post_inventory_movement":
-{ Args: { "p_date": string,"p_id": string,"p_notes": string,"p_plot": string,"p_product": Omit<Database["public"]['Tables']["inventory_products"]['Row'], Database["public"]['Tables']["inventory_products"]['ComputedFields']>,"p_project": string,"p_quantity": number,"p_reference": string,"p_reverses": string,"p_supplier": string,"p_total": number,"p_type": Database["public"]['Enums']["inventory_movement_type"] }; Returns: string
+{ Args: { "p_date": string,"p_id": string,"p_lot": string,"p_notes": string,"p_plot": string,"p_product": Omit<Database["public"]['Tables']["inventory_products"]['Row'], Database["public"]['Tables']["inventory_products"]['ComputedFields']>,"p_project": string,"p_quantity": number,"p_reference": string,"p_responsible": string,"p_reverses": string,"p_supplier": string,"p_to_warehouse": string,"p_total": number,"p_type": Database["public"]['Enums']["inventory_movement_type"],"p_warehouse": string }; Returns: string
+                           },
+"process_inventory_movement":
+{ Args: { "p_date": string,"p_id": string,"p_lot": string,"p_lot_expiry": string,"p_lot_number": string,"p_notes": string,"p_plot": string,"p_product": string,"p_project": string,"p_quantity": number,"p_reference": string,"p_responsible": string,"p_supplier": string,"p_to_warehouse": string,"p_type": Database["public"]['Enums']["inventory_movement_type"],"p_unit_cost": number,"p_warehouse": string }; Returns: string
+                           },
+"process_inventory_reversal":
+{ Args: { "p_id": string,"p_movement": string,"p_reason": string }; Returns: string
                            },
 "project_harvested_kg":
 { Args: { "p_project": string }; Returns: number
@@ -821,8 +1484,17 @@ isOneToOne: false
 "project_transition_allowed":
 { Args: { "p_from": Database["public"]['Enums']["project_status"],"p_to": Database["public"]['Enums']["project_status"] }; Returns: boolean
                            },
+"register_chemical_application":
+{ Args: { "p_active_ingredient"?: string,"p_date": string,"p_equipment"?: string,"p_id": string,"p_issue_from_stock"?: boolean,"p_lot"?: string,"p_lot_number"?: string,"p_machine"?: string,"p_notes"?: string,"p_plot": string,"p_preharvest_days"?: number,"p_product": string,"p_project": string,"p_quantity": number,"p_reentry_hours"?: number,"p_responsible"?: string,"p_time"?: string,"p_treated_area": number,"p_warehouse"?: string }; Returns: string
+                           },
+"register_crew_labor":
+{ Args: { "p_activity": string,"p_activity_type"?: string,"p_crew": string,"p_date": string,"p_employees"?: (string)[],"p_id": string,"p_notes"?: string,"p_pay_type"?: Database["public"]['Enums']["labor_pay_type"],"p_plot"?: string,"p_project": string,"p_quantity": number,"p_unit_label"?: string,"p_unit_rate"?: number }; Returns: number
+                           },
 "register_inventory_movement":
-{ Args: { "p_date": string,"p_id": string,"p_notes"?: string,"p_plot"?: string,"p_product": string,"p_project"?: string,"p_quantity": number,"p_reference"?: string,"p_supplier"?: string,"p_type": Database["public"]['Enums']["inventory_movement_type"],"p_unit_cost"?: number }; Returns: string
+{ Args: { "p_date": string,"p_id": string,"p_lot"?: string,"p_lot_expiry"?: string,"p_lot_number"?: string,"p_notes"?: string,"p_plot"?: string,"p_product": string,"p_project"?: string,"p_quantity": number,"p_reference"?: string,"p_responsible"?: string,"p_supplier"?: string,"p_to_warehouse"?: string,"p_type": Database["public"]['Enums']["inventory_movement_type"],"p_unit_cost"?: number,"p_warehouse"?: string }; Returns: string
+                           },
+"register_machinery_usage":
+{ Args: { "p_activity"?: string,"p_activity_type"?: string,"p_date": string,"p_fuel_lot"?: string,"p_fuel_product"?: string,"p_fuel_quantity"?: number,"p_fuel_warehouse"?: string,"p_hours": number,"p_id": string,"p_jornadas"?: number,"p_machine": string,"p_notes"?: string,"p_operator"?: string,"p_operator_id"?: string,"p_plot"?: string,"p_project": string,"p_rate"?: number,"p_rate_basis"?: Database["public"]['Enums']["machine_rate_basis"] }; Returns: string
                            },
 "register_payment":
 { Args: { "p_amount": number,"p_date": string,"p_id": string,"p_method": Database["public"]['Enums']["payment_method"],"p_notes"?: string,"p_reference"?: string,"p_sale": string }; Returns: string
@@ -830,8 +1502,14 @@ isOneToOne: false
 "reverse_inventory_movement":
 { Args: { "p_id": string,"p_movement": string,"p_reason": string }; Returns: string
                            },
+"seed_organization_catalogs":
+{ Args: { "p_org": string }; Returns: undefined
+                           },
 "shares_organization":
 { Args: { "p_user": string }; Returns: boolean
+                           },
+"storage_object_org":
+{ Args: { "p_name": string }; Returns: string
                            },
 "update_member":
 { Args: { "p_membership": string,"p_role": Database["public"]['Enums']["app_role"],"p_status": Database["public"]['Enums']["membership_status"] }; Returns: undefined
@@ -841,7 +1519,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_category": "semilla"|"fertilizante"|"agroquimico"|"combustible"|"empaque"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","membership_status": "activo"|"inactivo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "vigente"|"cancelada"
+            "app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","attendance_status": "presente"|"falta"|"permiso"|"incapacidad"|"descanso","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_kind": "semilla"|"fertilizante"|"agroquimico"|"biologico"|"combustible"|"herramienta"|"material"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida"|"transferencia","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","log_status": "registrado"|"cancelado","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","machine_rate_basis": "hora"|"jornada","machine_status": "operativa"|"en_mantenimiento"|"fuera_servicio"|"baja","maintenance_kind": "preventivo"|"correctivo","membership_status": "activo"|"inactivo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "vigente"|"cancelada","worker_type": "planta"|"eventual"|"temporal"|"destajista"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -961,7 +1639,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_category": ["semilla", "fertilizante", "agroquimico", "combustible", "empaque", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"membership_status": ["activo", "inactivo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["vigente", "cancelada"]
+            "app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"attendance_status": ["presente", "falta", "permiso", "incapacidad", "descanso"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_kind": ["semilla", "fertilizante", "agroquimico", "biologico", "combustible", "herramienta", "material", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida", "transferencia"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"log_status": ["registrado", "cancelado"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"machine_rate_basis": ["hora", "jornada"],"machine_status": ["operativa", "en_mantenimiento", "fuera_servicio", "baja"],"maintenance_kind": ["preventivo", "correctivo"],"membership_status": ["activo", "inactivo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["vigente", "cancelada"],"worker_type": ["planta", "eventual", "temporal", "destajista"]
           }
         }
 } as const

@@ -9,6 +9,7 @@ const SOURCE_KEY: Record<CostSource, keyof ProjectCosts> = {
   maquinaria: "machineryCost",
   mano_obra: "laborCost",
   gastos: "expensesCost",
+  actividades: "activitiesCost",
 }
 
 /** Costo de producción, unitarios, ventas acumuladas y saldo del proyecto. */

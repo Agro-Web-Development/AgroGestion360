@@ -50,7 +50,7 @@ export function AppSidebar({ organizationSlot }: { organizationSlot: React.React
       <SidebarFooter className="border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
         <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent/50 px-3 py-2 text-xs text-sidebar-foreground/70">
           <span className="size-2 shrink-0 rounded-full bg-sidebar-primary" aria-hidden />
-          <span className="truncate">Versión 0.3 · Fases 3–5 (finanzas)</span>
+          <span className="truncate">Versión 0.4 · Control operativo</span>
         </div>
       </SidebarFooter>
       <SidebarRail />

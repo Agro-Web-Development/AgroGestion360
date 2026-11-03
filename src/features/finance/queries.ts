@@ -19,6 +19,7 @@ function normalizeCosts(row: Awaited<ReturnType<typeof fetchCosts>>[number]) {
     machineryCost: n(row.machinery_cost),
     laborCost: n(row.labor_cost),
     expensesCost: n(row.expenses_cost),
+    activitiesCost: n(row.activities_cost),
     totalCost: n(row.total_cost),
     costPerHa: nOrNull(row.cost_per_ha),
     harvestedKg: n(row.harvested_kg),
@@ -92,6 +93,7 @@ type FinanceSummary = {
   machinery_cost: number
   labor_cost: number
   expenses_cost: number
+  activities_cost: number
   period_cost: number
   harvested_kg: number
   available_kg: number

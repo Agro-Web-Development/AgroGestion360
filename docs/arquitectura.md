@@ -15,7 +15,7 @@ Supabase
    ├─ PostgreSQL + RLS ........ aislamiento por organization_id y rol
    ├─ Funciones RPC plpgsql ... operaciones transaccionales (inventario, ventas, pagos…)
    ├─ Auth .................... correo/contraseña, recuperación, invitaciones
-   └─ Storage ................. evidencias y documentos (rutas org_id/…) — Fase 3
+   └─ Storage ................. bucket privado `evidencias` (rutas org_id/tipo/registro/archivo)
 ```
 
 **Defensa en profundidad:** la interfaz oculta acciones según `lib/auth/roles.ts`, las
@@ -33,7 +33,12 @@ src/
       ranchos/[id]     ranchos y sus parcelas
       cultivos/
       proyectos/       lista, nuevo, [id] (expediente con costos), [id]/editar
-      inventario/ maquinaria/ personal/ produccion/
+      inventario/      existencias, almacenes y lotes, movimientos, catálogos
+      bitacoras/       riego, aplicaciones, actividades, cronología, catálogo de actividades
+      maquinaria/      uso, equipos, mantenimiento
+      personal/        jornadas, asistencia, cuadrillas, asignaciones, empleados
+      reportes/        reportes operativos con exportación CSV
+      produccion/
       clientes/ ventas/ (nueva, [id]) pagos/ gastos/
       configuracion/   organizacion, usuarios, perfil
     auth/callback/     intercambio de código PKCE / token_hash
@@ -43,13 +48,16 @@ src/
     ui/                componentes shadcn/ui
     layout/            sidebar, selector de organización, menús
     forms/             FormInput, FormSelect, useActionForm, SubmitButton
-    shared/            KpiCard, ConfirmAction
+    shared/            KpiCard, ConfirmAction, ReasonDialog, FilterBar (filtros en la URL), UrlTabs,
+                       SearchInput, CatalogRowActions
   features/<módulo>/   schemas.ts (Zod) · actions.ts · queries.ts · components/
+                       (fieldlogs = bitácoras y evidencias; reports = agregaciones puras y CSV)
   lib/
     supabase/          client, server, proxy, admin (server-only)
     auth/              roles.ts (matriz de permisos), session.ts (DAL)
     actions.ts         ActionResult y traducción de errores de BD
     format.ts          MXN, números y fechas (America/Mexico_City)
+    search-params.ts   lectura validada de filtros de la URL (fechas, UUID)
   types/database.ts    tipos generados por `supabase gen types`
 supabase/
   migrations/          una migración por fase
@@ -168,18 +176,121 @@ importe de partida.
 **Acceso:** operación (inventario, maquinaria, personal, cosechas) la leen todos los miembros; clientes,
 ventas, pagos y gastos solo propietario, administrador, finanzas y consulta (`finance.read`).
 
+### Implementado (Fase 3 · control operativo)
+
+Migraciones `20261102030000_operations_enums.sql` (valor `transferencia`, en archivo propio porque PostgreSQL no
+usa un valor de enum en la transacción que lo crea) y `20261102030100_operations.sql`.
+
+| Tabla / vista            | Propósito                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| inventory_categories     | Categorías configurables con clasificación fija (`input_kind`): semilla, fertilizante, agroquímico, biológico, combustible, herramienta, material, otro. Reemplazan al enum `input_category`. |
+| suppliers                | Proveedores (RFC opcional). Las entradas por compra los referencian; los nombres capturados como texto se migraron al catálogo. |
+| warehouses               | Almacenes (rancho, ubicación, responsable). Toda organización nace con «Almacén general».      |
+| inventory_lots           | Lotes por producto con caducidad. Se crean en la entrada; solo se edita caducidad y notas.     |
+| inventory_balances       | Existencia por producto × almacén × lote. Σ saldos = `inventory_products.stock` (solo la RPC los toca). |
+| activity_types           | Catálogo de actividades agrícolas (10 iniciales), usado por bitácora, mano de obra y maquinaria. |
+| irrigation_logs          | Riegos: parcela, horario (duración calculada, cruza medianoche), sistema, m³ opcional, responsable. |
+| chemical_applications    | Aplicaciones: producto del inventario, ingrediente activo, cantidad, superficie, lote, equipo, reentrada e intervalo de seguridad. Ligada a la salida de almacén que genera. |
+| field_activities         | Actividades con tipo, parcela, responsable y costo adicional opcional.                         |
+| machinery_maintenance    | Mantenimientos preventivos y reparaciones con costo y horómetro.                               |
+| crews · crew_members     | Cuadrillas con jefe e integrantes.                                                             |
+| attendance_records       | Asistencia diaria (presente, falta, permiso, incapacidad, descanso) con entrada y salida.      |
+| employee_assignments     | Asignación de trabajadores a proyecto/parcela/cuadrilla con periodo y función.                 |
+| attachments              | Evidencias fotográficas (metadatos); el archivo vive en Storage.                               |
+| v_inventory_stock        | Existencias por almacén y lote con días a caducidad y valor estimado.                          |
+| v_machinery_status       | Horas, costo cargado, mantenimiento y alerta (`vencido`, `proximo`, `al_dia`, `sin_programa`). |
+| v_project_timeline       | Cronología del proyecto: riegos, aplicaciones, actividades, jornadas, maquinaria e insumos.     |
+
+Columnas nuevas en tablas existentes:
+
+- `inventory_products`: `category_id` (FK compuesta), `track_lots`; unidades `g`, `ml`, `caja`, `m`.
+- `inventory_movements`: `warehouse_id`, `to_warehouse_id`, `lot_id`, `supplier_id`, `responsible_id` (empleado) y
+  `unit` (unidad al registrar). Se eliminó la columna de texto `supplier`.
+- `machinery`: marca, modelo, número de serie, adquisición (fecha y costo), `status` (`operativa`, `en_mantenimiento`,
+  `fuera_servicio`, `baja`), responsable, `rate_basis` + `daily_rate`, intervalos de mantenimiento (horas y días).
+  `is_active` ahora es columna generada (`status <> 'baja'`).
+- `machinery_usage`: `hourly_rate` → `rate`; `rate_basis`, `jornadas`, `operator_id`, `activity_type_id`,
+  `fuel_quantity`, `fuel_movement_id`. `amount` = (horas o jornadas) × tarifa.
+- `employees`: `worker_type`, `hire_date`. `labor_records`: `crew_id`, `activity_type_id`, `batch_id`.
+- `v_project_costs` agrega `activities_cost`; `finance_summary` devuelve `activities_cost`.
+
+RPC (transaccionales, `SECURITY DEFINER`, verifican rol, idempotentes por id del cliente):
+
+| Función                          | Qué hace                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `register_inventory_movement`    | Entrada, consumo, devolución, ajustes y **transferencia**, con almacén, lote (crea o elige), proveedor y responsable. |
+| `reverse_inventory_movement`     | Anula con contrapartida exacta (misma cantidad, valor, almacén y lote). No anula consumos que pertenecen a una aplicación o a un uso de maquinaria. |
+| `register_chemical_application`  | Registra la aplicación y, si se descuenta del almacén, su salida por consumo en la misma transacción. |
+| `cancel_chemical_application`    | Cancela con motivo y regresa el producto (mismo lote) y su costo.                           |
+| `register_machinery_usage`       | Uso por hora o jornada y, opcionalmente, el combustible surtido del almacén.               |
+| `register_crew_labor`            | Una jornada por integrante de la cuadrilla en una sola operación.                          |
+| `cancel_field_record`            | Cancela con motivo riegos, actividades y mantenimientos.                                   |
+
+Internas (sin `EXECUTE` para usuarios): `process_inventory_movement`, `process_inventory_reversal`,
+`post_inventory_movement`, `apply_inventory_balance`, `seed_organization_catalogs`.
+
+Reglas en base de datos:
+
+- **Sin existencias negativas por almacén ni por lote**, aunque el total del producto alcance. El producto se
+  bloquea `FOR UPDATE` en cada movimiento, lo que serializa todos sus saldos.
+- **Costo promedio ponderado por producto** (no por almacén): una transferencia mueve cantidad sin cambiar el valor
+  del inventario ni el costo de ningún proyecto. Cada movimiento conserva su costo histórico (`total_cost`).
+- **Lotes**: con `track_lots`, toda entrada indica lote (si existe se suma; si trae otra caducidad se rechaza) y toda
+  salida indica de qué lote sale. Un lote caducado no se consume en campo; se da de baja como ajuste. El control por
+  lotes solo cambia con existencia en cero.
+- **Historial inmutable**: un trigger impide `UPDATE` y `DELETE` en `inventory_movements` incluso al dueño de la base
+  (solo se permite la cascada al eliminar la organización). Las bitácoras y mantenimientos tampoco se eliminan: se
+  cancelan con motivo, y un registro cancelado ya no se edita.
+- **Proyecto vigente**: riegos, aplicaciones y actividades usan el mismo trigger `check_project_record` que los costos:
+  fecha no futura ni anterior al inicio, parcela asignada al proyecto y proyecto no cerrado ni cancelado.
+- **Aplicaciones**: solo productos de clasificación agroquímico, biológico o fertilizante; la superficie tratada no
+  excede la asignada a la parcela en el proyecto. No hay recomendaciones de dosis: solo se registra lo aplicado.
+- **Maquinaria**: un equipo no excede 24 h ni 1 jornada por día entre todos los proyectos; equipos fuera de servicio
+  o dados de baja no registran uso. Eliminar un uso con combustible del almacén regresa el combustible y su costo.
+- **Personal**: no se registra trabajo a quien tiene falta, permiso, incapacidad o descanso ese día, ni se marca falta
+  a quien tiene trabajo registrado; registrar trabajo marca la asistencia como presente.
+- **Almacenes**: uno con existencias no se desactiva; una organización con un solo almacén activo puede omitirlo en
+  la RPC (se usa ese).
+- **Evidencias**: la ruta debe ser `organización/tipo/registro/archivo` (CHECK) y el archivo debe existir en Storage
+  (trigger). Políticas de `storage.objects`: leer = miembro de la organización de la primera carpeta; subir =
+  propietario, administrador, agrónomo o supervisor; eliminar = quien lo subió o propietario/administrador. El
+  bucket solo acepta JPG, PNG, WEBP y HEIC de hasta 10 MB.
+
+**Regla de costos (sin duplicidad), ampliada:**
+
+| Concepto                               | Dónde se carga                     | Por qué no se duplica                                              |
+| -------------------------------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| Agroquímico aplicado desde el almacén  | Insumos (consumo)                  | La aplicación no tiene costo propio; solo su salida de almacén.     |
+| Combustible surtido a un equipo        | Insumos (consumo)                  | La tarifa del equipo debe excluir el combustible del almacén.       |
+| Horas o jornadas de un equipo          | Maquinaria (tarifa congelada)      | Máximo 24 h / 1 jornada por equipo y día.                           |
+| Mantenimiento y reparaciones           | Costo del equipo (no del proyecto) | El proyecto absorbe la maquinaria solo vía tarifa de uso.           |
+| Jornadas de una cuadrilla              | Mano de obra (una por integrante)  | Máximo 1 jornal por empleado y día; idempotente por lote.           |
+| Costo adicional de una actividad       | Actividades                        | Solo lo no capturado en otro módulo (p. ej. servicio contratado).   |
+| Compra / transferencia                 | Ninguno                            | El costo nace en el consumo.                                        |
+
+**Acceso:** todos los miembros leen la operación. Bitácoras: propietario, administrador, agrónomo y supervisor.
+Inventario y sus catálogos: propietario, administrador y almacén (las aplicaciones de campo descuentan del almacén
+mediante su RPC, que verifica el rol de campo). Maquinaria, mantenimiento, cuadrillas y asignaciones: propietario,
+administrador y agrónomo. Asistencia y jornadas: además, supervisor.
+
+**Reportes operativos** (`/reportes`): consumo de insumos por proyecto, existencias, por caducar (60 días), riegos,
+aplicaciones, jornadas, costos de mano de obra, utilización de maquinaria y costos operativos. Se filtran por periodo
+y proyecto en el servidor (máximo 5,000 registros por reporte), se agregan con funciones puras
+(`features/reports/aggregate.ts`, con pruebas) y se exportan a CSV.
+
 ### Pendiente
 
-- Presupuestos por categoría (`project_budgets`), reportes exportables (CSV/XLSX/PDF) y bitácoras de
-  campo (`irrigation_logs`, `chemical_applications`, `attachments`).
-- Inventario: almacenes múltiples, lotes y caducidades, transferencias, proveedores como catálogo.
+- Presupuestos por categoría (`project_budgets`) y reportes en XLSX/PDF.
+- Inventario: costo PEPS por lote, devoluciones a proveedor, conteos físicos programados.
+- Edición de registros de costo (uso de maquinaria y jornadas) en lugar de eliminar y volver a capturar.
 - Ventas: anticipos sin venta, notas de crédito y CFDI.
 
 ## Roadmap
 
 1. ✅ Fundación: Next.js, tema, Supabase, autenticación, organizaciones, roles, usuarios.
 2. ✅ Dashboard con indicadores reales, ranchos, parcelas, cultivos, proyectos y expediente.
-3. ✅ Inventario de insumos, maquinaria, recursos humanos · ⏳ bitácoras de campo.
+3. ✅ Control operativo: inventario con almacenes, lotes y transferencias; bitácoras de riego, aplicaciones y
+   actividades con evidencias; maquinaria con mantenimiento; personal con asistencia y cuadrillas; reportes.
 4. ✅ Cortes de producción, clientes, ventas, pagos, cuentas por cobrar.
-5. ✅ Gastos, costos, rentabilidad · ⏳ presupuestos por categoría, reportes (CSV/XLSX/PDF).
+5. ✅ Gastos, costos, rentabilidad · ⏳ presupuestos por categoría, reportes XLSX/PDF.
 6. PWA, captura sin conexión con sincronización, pruebas E2E, endurecimiento y despliegue.

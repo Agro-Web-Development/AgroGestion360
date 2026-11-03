@@ -55,8 +55,10 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"12000000-0000-4000-a000-00000000000e","role":"authenticated"}', true);
 
 select lives_ok(
-  $$insert into public.inventory_products (id, organization_id, name, category, unit)
-    values ('72000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a', 'Urea 46%', 'fertilizante', 'kg')$$,
+  $$insert into public.inventory_products (id, organization_id, name, category_id, unit)
+    values ('72000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a', 'Urea 46%',
+            (select id from public.inventory_categories
+             where organization_id = '22000000-0000-4000-a000-00000000000a' and kind = 'fertilizante'), 'kg')$$,
   'Almacén registra productos');
 select throws_ok(
   $$update public.inventory_products set stock = 999 where id = '72000000-0000-4000-a000-0000000000a1'$$,
@@ -68,7 +70,7 @@ select throws_ok(
 
 select lives_ok(
   $$select public.register_inventory_movement('82000000-0000-4000-a000-000000000001', '72000000-0000-4000-a000-0000000000a1',
-      'entrada', public.mx_today(), 100, 10, p_supplier => 'Fertilizantes del Bajío', p_reference => 'FAC-1')$$,
+      'entrada', public.mx_today(), 100, 10, p_reference => 'FAC-1')$$,
   'Entrada de 100 kg a $10');
 select lives_ok(
   $$select public.register_inventory_movement('82000000-0000-4000-a000-000000000001', '72000000-0000-4000-a000-0000000000a1',

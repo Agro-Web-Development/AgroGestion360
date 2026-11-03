@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Layers, Pencil, Receipt, Trash2 } from "lucide-react"
+import { ArrowLeft, CalendarDays, ClipboardList, Layers, Pencil, Receipt, Trash2 } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -8,9 +8,13 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { yieldUnitShort } from "@/features/crops/schemas"
+import { ProjectTimeline } from "@/features/fieldlogs/components/timeline"
+import { getProjectOperations, getProjectTimeline } from "@/features/fieldlogs/queries"
+import { formatDuration } from "@/features/fieldlogs/schemas"
 import { CostEntriesTable } from "@/features/finance/components/cost-entries-table"
 import { ProjectFinanceCard } from "@/features/finance/components/project-finance-card"
 import { getProjectCost, getProjectCostEntries } from "@/features/finance/queries"
+import { getAssignments } from "@/features/labor/queries"
 import { deleteProject } from "@/features/projects/actions"
 import { AssignPlotDialog } from "@/features/projects/components/assign-plot-dialog"
 import { ChangeStatusDialog } from "@/features/projects/components/change-status-dialog"
@@ -27,6 +31,7 @@ export const metadata: Metadata = { title: "Expediente del proyecto" }
 
 const DAY_MS = 86_400_000
 const COST_ENTRY_LIMIT = 100
+const TIMELINE_LIMIT = 40
 
 export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]">) {
   const { id } = await params
@@ -34,6 +39,11 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
   const canWrite = can(ctx.role, "projects.write")
   const canSeeFinance = can(ctx.role, "finance.read")
   const [project, history, members] = await Promise.all([getProject(id), getProjectHistory(id), getActiveMembers()])
+  const [timeline, operations, assignments] = await Promise.all([
+    getProjectTimeline(project.id, {}, TIMELINE_LIMIT),
+    getProjectOperations(project.id),
+    getAssignments(project.id),
+  ])
   const [costs, costEntries] = canSeeFinance
     ? await Promise.all([getProjectCost(project.id), getProjectCostEntries(project.id, COST_ENTRY_LIMIT)])
     : [null, []]
@@ -174,6 +184,34 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
             </Card>
           )}
 
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle>Bitácora del proyecto</CardTitle>
+                <CardDescription>Riegos, aplicaciones, actividades, jornadas, maquinaria e insumos en orden cronológico.</CardDescription>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/bitacoras?proyecto=${project.id}&tab=cronologia`}>Ver todo</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {timeline.length === 0 ? (
+                <EmptyState
+                  icon={ClipboardList}
+                  title="Sin registros de campo"
+                  description="Registra riegos, aplicaciones y actividades en Bitácoras; jornadas y maquinaria también aparecen aquí."
+                />
+              ) : (
+                <>
+                  <ProjectTimeline entries={timeline} showAmounts={canSeeFinance} />
+                  {timeline.length === TIMELINE_LIMIT && (
+                    <p className="mt-4 text-xs text-muted-foreground">Se muestran los {TIMELINE_LIMIT} registros más recientes.</p>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {project.description && (
             <Card>
               <CardHeader>
@@ -267,6 +305,48 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
                 <dt className="text-muted-foreground">Última modificación</dt>
                 <dd className="text-right">{formatDateTime(project.updated_at)}</dd>
               </dl>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Operación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-3 text-sm">
+                <dt className="text-muted-foreground">Riegos</dt>
+                <dd className="text-right tabular-nums">
+                  {formatNumber(operations.irrigations)}
+                  {operations.irrigations > 0 && (
+                    <span className="block text-xs text-muted-foreground">
+                      {formatDuration(operations.irrigationMinutes)}
+                      {operations.waterM3 > 0 && ` · ${formatNumber(operations.waterM3, "m³")}`}
+                    </span>
+                  )}
+                </dd>
+                <dt className="text-muted-foreground">Aplicaciones</dt>
+                <dd className="text-right tabular-nums">{formatNumber(operations.applications)}</dd>
+                <dt className="text-muted-foreground">Actividades</dt>
+                <dd className="text-right tabular-nums">{formatNumber(operations.activities)}</dd>
+                <dt className="text-muted-foreground">Jornales</dt>
+                <dd className="text-right tabular-nums">{formatNumber(operations.jornales)}</dd>
+                <dt className="text-muted-foreground">Horas de maquinaria</dt>
+                <dd className="text-right tabular-nums">{formatNumber(operations.machineHours, "h")}</dd>
+              </dl>
+              {assignments.length > 0 && (
+                <div className="mt-4 border-t pt-4">
+                  <p className="mb-2 text-sm font-medium">Personal asignado</p>
+                  <ul className="space-y-1.5 text-sm">
+                    {assignments.map((a) => (
+                      <li key={a.id} className="flex justify-between gap-2">
+                        <span>{a.employee.full_name}</span>
+                        <span className="text-right text-xs text-muted-foreground">
+                          {[a.role, a.crew?.name, a.assignment?.plot.name].filter(Boolean).join(" · ") || "Todo el proyecto"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
           {canSeeFinance && costs && <ProjectFinanceCard costs={costs} />}

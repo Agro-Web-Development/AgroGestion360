@@ -46,7 +46,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "Operación",
     items: [
       { title: "Inventario", href: "/inventario", icon: Package },
-      { title: "Bitácoras", href: "/bitacoras", icon: ClipboardList, comingInPhase: 3 },
+      { title: "Bitácoras", href: "/bitacoras", icon: ClipboardList },
       { title: "Maquinaria", href: "/maquinaria", icon: Tractor },
       { title: "Personal", href: "/personal", icon: UsersRound },
     ],
@@ -64,7 +64,7 @@ export const NAVIGATION: NavGroup[] = [
     label: "Finanzas",
     items: [
       { title: "Gastos y rentabilidad", href: "/gastos", icon: Wallet },
-      { title: "Reportes", href: "/reportes", icon: BarChart3, comingInPhase: 5 },
+      { title: "Reportes operativos", href: "/reportes", icon: BarChart3 },
     ],
   },
   {

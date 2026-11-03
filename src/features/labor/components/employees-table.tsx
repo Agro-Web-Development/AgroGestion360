@@ -6,9 +6,10 @@ import { ConfirmAction } from "@/components/shared/confirm-action"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatMoney, formatNumber } from "@/lib/format"
+import { formatDate, formatMoney, formatNumber } from "@/lib/format"
 import { deleteEmployee, setEmployeeActive } from "../actions"
 import type { Employee } from "../queries"
+import { WORKER_TYPE_LABELS } from "../schemas"
 import { EmployeeFormDialog } from "./employee-form-dialog"
 
 export function EmployeesTable({
@@ -26,8 +27,9 @@ export function EmployeesTable({
         <TableHeader>
           <TableRow>
             <TableHead>Empleado</TableHead>
-            <TableHead className="hidden sm:table-cell">Teléfono</TableHead>
-            <TableHead className="text-right">Salario diario</TableHead>
+            <TableHead className="hidden sm:table-cell">Tipo / ingreso</TableHead>
+            <TableHead className="hidden lg:table-cell">Teléfono</TableHead>
+            <TableHead className="text-right">Tarifa diaria</TableHead>
             <TableHead className="hidden text-right md:table-cell">Registros</TableHead>
             {(canWrite || canDelete) && (
               <TableHead className="w-28">
@@ -50,7 +52,11 @@ export function EmployeesTable({
                 </p>
                 {e.position && <p className="text-xs text-muted-foreground">{e.position}</p>}
               </TableCell>
-              <TableCell className="hidden sm:table-cell">{e.phone ?? "—"}</TableCell>
+              <TableCell className="hidden sm:table-cell">
+                {WORKER_TYPE_LABELS[e.worker_type]}
+                {e.hire_date && <p className="text-xs text-muted-foreground">Desde {formatDate(e.hire_date)}</p>}
+              </TableCell>
+              <TableCell className="hidden lg:table-cell">{e.phone ?? "—"}</TableCell>
               <TableCell className="text-right tabular-nums">{formatMoney(e.daily_wage)}</TableCell>
               <TableCell className="hidden text-right tabular-nums md:table-cell">{formatNumber(e.recordCount)}</TableCell>
               {(canWrite || canDelete) && (
@@ -62,7 +68,9 @@ export function EmployeesTable({
                           id: e.id,
                           fullName: e.full_name,
                           position: e.position ?? "",
+                          workerType: e.worker_type,
                           phone: e.phone ?? "",
+                          hireDate: e.hire_date ?? "",
                           dailyWage: String(e.daily_wage),
                           notes: e.notes ?? "",
                         }}

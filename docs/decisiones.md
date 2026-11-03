@@ -36,13 +36,33 @@
 | 32 | Ventas sin IVA (tasa 0 %). | Productos agrícolas sin transformar; CFDI fuera de alcance. |
 | 33 | Clientes, ventas, pagos y gastos solo los leen propietario, administrador, finanzas y consulta; el expediente muestra costos solo a esos roles. | Por la RLS un agrónomo vería cifras incompletas (sin gastos ni ventas); se prefiere no mostrar totales parciales. |
 | 34 | Un empleado registra máximo 1 jornal por día entre todos los proyectos; el tiempo extra se registra como destajo. | Evita pagar o costear dos veces la misma jornada. |
+| 35 | La Fase 3 **amplía** inventario, maquinaria y personal existentes (columnas y tablas nuevas, datos migrados) en lugar de crear módulos paralelos. | No duplicar tablas ni componentes; los costos de la fase financiera siguen cuadrando al centavo. |
+| 36 | Categorías de insumo configurables con una **clasificación fija** (`input_kind`). | La organización nombra sus categorías, pero las reglas (qué se aplica en campo, qué es combustible) no dependen de un texto editable. |
+| 37 | Costo promedio ponderado **por producto**, no por almacén; existencias por almacén y lote. | Una transferencia no cambia el valor del inventario ni el costo de ningún proyecto; el promedio por almacén complicaría las transferencias sin beneficio para el usuario. |
+| 38 | Lotes opcionales por producto (`track_lots`), obligatorios en entradas y salidas cuando se activan. | Semillas, agroquímicos y biológicos requieren trazabilidad y caducidad; fertilizantes a granel o diésel no. |
+| 39 | Movimientos de inventario inmutables también para el dueño de la BD (trigger). | La regla "no eliminar movimientos históricos" no depende solo de los permisos de la API. |
+| 40 | La aplicación de agroquímicos genera su propia salida de almacén en la misma transacción; la RPC verifica el rol de campo, no el de almacén. | El aplicador registra una sola vez; el almacén no tiene que capturar el consumo por separado y no puede duplicarse. Para corregirla se cancela (regresa el producto) y no se anula desde el almacén. |
+| 41 | El sistema registra lo aplicado (cantidad, superficie, cantidad/ha, reentrada, intervalo de seguridad) y **no recomienda dosis ni tratamientos**. | Requisito explícito; la responsabilidad técnica es del agrónomo y de la etiqueta del producto. |
+| 42 | Mantenimientos y reparaciones son costo del equipo, no del proyecto. | El proyecto paga la maquinaria con su tarifa (que incluye mantenimiento); cargar también el mantenimiento lo contaría dos veces. El reporte de maquinaria compara lo cargado con lo gastado. |
+| 43 | Tarifa de maquinaria por hora o por jornada, elegida en cada registro; las horas siempre se capturan. | Hay equipos que se rentan por jornada; las horas alimentan las alertas de mantenimiento. |
+| 44 | Combustible surtido del almacén al registrar uso de maquinaria (opcional). Eliminar el uso devuelve el combustible. | El combustible queda como insumo del proyecto y su existencia se descuenta, sin capturas dobles. |
+| 45 | El costo de una actividad de campo es solo un **costo adicional** (servicio contratado u otro sin módulo propio) y forma la fuente `actividades`. | Las labores con jornales, maquinaria o insumos ya tienen costo en su módulo; la interfaz lo advierte junto al campo. |
+| 46 | Bitácoras y mantenimientos se **cancelan** con motivo; no se eliminan ni se editan cancelados. | Trazabilidad; el costo de una actividad cancelada deja de contar. |
+| 47 | Asistencia y jornadas coherentes en la BD; registrar trabajo marca asistencia automáticamente. | Evita pagar trabajo a quien faltó y ahorra la doble captura en campo. |
+| 48 | Cuadrillas: una jornada por integrante, creada en una sola RPC idempotente (`batch_id`). | Mantiene el costo por persona y la regla de 1 jornal/día; un reintento no duplica la cuadrilla. |
+| 49 | Evidencias: el navegador sube directo a Storage (bucket privado) y el servidor registra el archivo; se muestran con URL firmada de 30 min. | Evita el límite de tamaño de las Server Actions; la RLS de Storage valida organización y rol por la ruta y la BD verifica que el archivo exista. Las fotos se suben después de guardar el registro, para que una mala conexión no impida capturar la bitácora. |
+| 50 | Filtros de periodo y proyecto en la URL (`next/form`), validados en el servidor; la pestaña activa también va en la URL. | Las consultas traen solo el periodo pedido, la vista se puede compartir o recargar y los parámetros nunca llegan sin validar a PostgREST. |
+| 51 | Reportes operativos sin gastos directos ni ventas, visibles para todos los miembros; exportación CSV. | Todo lo que agregan lo pueden leer todos los roles por RLS, así que no hay totales parciales (decisión 33). XLSX/PDF quedan para la Fase 5. |
 
 ## Pendientes conocidos
 
 - Las plantillas de correo de Supabase local están en inglés; se traducirán al configurar
   el proyecto de producción (`supabase/templates/`).
-- Los registros de costo se corrigen eliminando y volviendo a capturar (mientras el proyecto esté vigente);
-  no hay edición en la interfaz.
+- Los registros de costo (uso de maquinaria y jornadas) se corrigen eliminando y volviendo a capturar (mientras el
+  proyecto esté vigente); no hay edición en la interfaz. Las bitácoras, catálogos, mantenimientos, asistencia y
+  asignaciones sí se editan.
+- Las vistas de campo (`v_project_timeline`) muestran importes solo a los roles con `finance.read`, igual que el
+  expediente.
 - Las listas de movimientos y registros muestran los 200–300 más recientes; falta paginación y filtro por
   fechas.
 - `npm audit` reporta vulnerabilidades moderadas en dependencias de desarrollo

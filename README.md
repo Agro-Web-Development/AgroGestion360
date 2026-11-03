@@ -4,9 +4,10 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fases 1–2 completas y módulos financieros (inventario de insumos, maquinaria, mano de obra,
-gastos, cosechas, ventas, pagos, cobranza y rentabilidad) implementados. Ver [docs/arquitectura.md](docs/arquitectura.md)
-y [docs/decisiones.md](docs/decisiones.md).
+**Estado:** Fases 1–3 completas (incluye control operativo: inventario con almacenes, lotes y transferencias;
+bitácoras de riego, aplicaciones y actividades; maquinaria con mantenimiento; personal con asistencia y cuadrillas;
+reportes operativos) y módulos financieros (gastos, cosechas, ventas, cobranza y rentabilidad). Ver
+[docs/arquitectura.md](docs/arquitectura.md) y [docs/decisiones.md](docs/decisiones.md).
 
 ## Stack
 
@@ -121,6 +122,35 @@ Los datos demo incluyen inventario con compras y consumos, 4 equipos, 4 empleado
    siempre con el costo de producción). Al cerrar el proyecto sus costos e ingresos quedan congelados.
 8. **Permisos:** `agronomo@…` registra maquinaria y mano de obra pero no ve ventas, clientes ni gastos;
    `consulta@…` ve todo en solo lectura.
+
+## Cómo probar la Fase 3 (control operativo)
+
+Los datos demo agregan 2 almacenes, 5 proveedores, lotes con caducidad (uno vence en 20 días), una transferencia,
+3 aplicaciones, 7 riegos, 6 actividades, mantenimientos (el camión tiene el servicio vencido), una cuadrilla de 3
+personas con asignaciones y una falta registrada.
+
+1. **Inventario → Catálogos:** crea una categoría (la clasificación define si se ofrece en aplicaciones o como
+   combustible), un almacén y un proveedor. Desactivar un almacén con existencias se rechaza.
+2. **Movimientos:** registra una *entrada* de un producto con control por lote (pide lote y caducidad), una
+   *transferencia* entre almacenes (no cambia el valor ni los costos) y un *consumo* eligiendo el lote. Intenta sacar
+   más de lo que hay en un almacén: se rechaza aunque el total alcance. *Anular* una transferencia la regresa.
+   *Por almacén y lote* muestra caducidades; los filtros de fecha/almacén/producto consultan en el servidor.
+3. **Bitácoras → Aplicación:** elige un agroquímico; con *Descontar del almacén* se genera el consumo (aparece en
+   Inventario como *Desde bitácora* y en el costo del proyecto). No ofrece dosis: solo muestra la cantidad/ha
+   registrada. *Cancelar* regresa el producto al mismo lote. Agrega fotografías desde el formulario o con el ícono de
+   cámara.
+4. **Riego y actividades:** un riego de 22:00 a 02:00 dura 4 h. Una actividad con costo adicional suma a la fuente
+   *Actividades de campo* del proyecto; al cancelarla deja de sumar. *Cronología* muestra todo lo del proyecto.
+5. **Maquinaria:** registra uso por jornada o con combustible del almacén (el diésel va a insumos, la tarifa a
+   maquinaria). Registra un preventivo y observa cómo cambia la alerta. Un equipo fuera de servicio no registra uso.
+6. **Personal:** *Jornada de cuadrilla* crea un registro por integrante; quien tiene falta ese día lo impide.
+   Registrar un jornal marca la asistencia; no se puede marcar falta a quien ya trabajó.
+7. **Expediente del proyecto:** tarjetas *Bitácora del proyecto* y *Operación* (riegos, aplicaciones, jornales,
+   horas de máquina, personal asignado).
+8. **Reportes operativos:** nueve reportes por periodo y proyecto con exportación CSV.
+9. **Permisos:** `campo@…` (supervisor) registra bitácoras, asistencia y jornadas pero no mueve inventario ni
+   administra equipos; `agronomo@…` administra maquinaria, cuadrillas y asignaciones; `consulta@…` solo consulta.
+10. **Pruebas:** `npm test` (83) y `npm run test:db` (207, incluye `04_operations.test.sql`).
 
 ## Seguridad
 

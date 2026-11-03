@@ -1,48 +1,68 @@
 "use client"
 
-import { Pencil, Power, PowerOff, Search, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
-import { ConfirmAction } from "@/components/shared/confirm-action"
+import { CatalogRowActions } from "@/components/shared/catalog-row-actions"
+import { matchesQuery, SearchInput } from "@/components/shared/search-input"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatMoney, formatNumber } from "@/lib/format"
 import { toInput } from "@/lib/validation"
-import { deleteProduct, setProductActive } from "../actions"
-import type { Product } from "../queries"
-import { INPUT_CATEGORY_LABELS, type InventoryUnit } from "../schemas"
+import { deleteCatalog, setCatalogActive } from "../actions"
+import type { Category, Product } from "../queries"
+import type { InventoryUnit } from "../schemas"
 import { ProductFormDialog } from "./product-form-dialog"
+
+const ALL = "todas"
 
 export function ProductsTable({
   products,
+  categories,
   canWrite,
   canDelete,
 }: {
   products: Product[]
+  categories: Category[]
   canWrite: boolean
   canDelete: boolean
 }) {
   const [query, setQuery] = useState("")
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return products
-    return products.filter((p) => [p.name, p.sku, INPUT_CATEGORY_LABELS[p.category]].some((v) => v?.toLowerCase().includes(q)))
-  }, [products, query])
+  const [categoryId, setCategoryId] = useState(ALL)
+  const [onlyLow, setOnlyLow] = useState(false)
+  const filtered = useMemo(
+    () =>
+      products.filter(
+        (p) =>
+          (categoryId === ALL || p.category.id === categoryId) &&
+          (!onlyLow || p.lowStock) &&
+          matchesQuery(query, p.name, p.sku, p.category.name)
+      ),
+    [products, query, categoryId, onlyLow]
+  )
   const totalValue = filtered.reduce((s, p) => s + Number(p.stock_value), 0)
 
   return (
     <div className="space-y-3">
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nombre, clave o categoría"
-          className="pl-8"
-          aria-label="Buscar productos"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <SearchInput value={query} onChange={setQuery} placeholder="Buscar por nombre, clave o categoría" />
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger className="w-full sm:w-56" aria-label="Filtrar por categoría">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Todas las categorías</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} className="size-4 accent-primary" />
+          Solo bajo mínimo
+        </label>
       </div>
       <div className="overflow-x-auto rounded-lg border">
         <Table>
@@ -51,6 +71,7 @@ export function ProductsTable({
               <TableHead>Producto</TableHead>
               <TableHead className="hidden md:table-cell">Categoría</TableHead>
               <TableHead className="text-right">Existencia</TableHead>
+              <TableHead className="hidden text-right lg:table-cell">Mínimo</TableHead>
               <TableHead className="hidden text-right sm:table-cell">Costo promedio</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               {(canWrite || canDelete) && (
@@ -63,7 +84,7 @@ export function ProductsTable({
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                   No se encontraron productos.
                 </TableCell>
               </TableRow>
@@ -79,9 +100,12 @@ export function ProductsTable({
                       </Badge>
                     )}
                   </p>
-                  {p.sku && <p className="text-xs text-muted-foreground">{p.sku}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    {[p.sku, p.track_lots && "Por lote"].filter(Boolean).join(" · ")}
+                    <span className="md:hidden">{p.sku || p.track_lots ? " · " : ""}{p.category.name}</span>
+                  </p>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">{INPUT_CATEGORY_LABELS[p.category]}</TableCell>
+                <TableCell className="hidden md:table-cell">{p.category.name}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatNumber(p.stock, p.unit)}
                   {p.lowStock && (
@@ -90,62 +114,42 @@ export function ProductsTable({
                     </Badge>
                   )}
                 </TableCell>
+                <TableCell className="hidden text-right tabular-nums lg:table-cell">{formatNumber(p.min_stock, p.unit)}</TableCell>
                 <TableCell className="hidden text-right tabular-nums sm:table-cell">{formatMoney(p.avg_cost)}</TableCell>
                 <TableCell className="text-right font-medium tabular-nums">{formatMoney(p.stock_value)}</TableCell>
                 {(canWrite || canDelete) && (
                   <TableCell>
-                    <div className="flex justify-end gap-1">
-                      {canWrite && (
-                        <ProductFormDialog
-                          unitLocked={p.movementCount > 0}
-                          product={{
-                            id: p.id,
-                            name: p.name,
-                            sku: p.sku ?? "",
-                            category: p.category,
-                            unit: p.unit as InventoryUnit,
-                            minStock: toInput(p.min_stock),
-                            notes: p.notes ?? "",
-                          }}
-                          trigger={
-                            <Button variant="ghost" size="icon" aria-label={`Editar ${p.name}`}>
-                              <Pencil aria-hidden />
-                            </Button>
-                          }
-                        />
-                      )}
-                      {canWrite && (
-                        <ConfirmAction
-                          title={p.is_active ? "Desactivar producto" : "Reactivar producto"}
-                          description={
-                            p.is_active
-                              ? `"${p.name}" ya no admitirá entradas ni consumos. Su existencia y su historial se conservan.`
-                              : `"${p.name}" volverá a estar disponible.`
-                          }
-                          confirmLabel={p.is_active ? "Desactivar" : "Reactivar"}
-                          destructive={p.is_active}
-                          action={() => setProductActive(p.id, !p.is_active)}
-                          trigger={
-                            <Button variant="ghost" size="icon" aria-label={p.is_active ? `Desactivar ${p.name}` : `Reactivar ${p.name}`}>
-                              {p.is_active ? <PowerOff aria-hidden /> : <Power aria-hidden />}
-                            </Button>
-                          }
-                        />
-                      )}
-                      {canDelete && p.movementCount === 0 && (
-                        <ConfirmAction
-                          title="Eliminar producto"
-                          description={`Se eliminará "${p.name}" de forma permanente.`}
-                          confirmLabel="Eliminar"
-                          action={() => deleteProduct(p.id)}
-                          trigger={
-                            <Button variant="ghost" size="icon" aria-label={`Eliminar ${p.name}`}>
-                              <Trash2 aria-hidden />
-                            </Button>
-                          }
-                        />
-                      )}
-                    </div>
+                    <CatalogRowActions
+                      name={p.name}
+                      active={p.is_active}
+                      deactivateDescription={`"${p.name}" ya no admitirá entradas ni consumos. Su existencia y su historial se conservan.`}
+                      editDialog={
+                        canWrite
+                          ? (trigger) => (
+                              <ProductFormDialog
+                                trigger={trigger}
+                                categories={categories}
+                                unitLocked={p.movementCount > 0}
+                                lotsLocked={Number(p.stock) > 0}
+                                product={{
+                                  id: p.id,
+                                  name: p.name,
+                                  sku: p.sku ?? "",
+                                  categoryId: p.category.id,
+                                  unit: p.unit as InventoryUnit,
+                                  minStock: toInput(p.min_stock),
+                                  trackLots: p.track_lots,
+                                  notes: p.notes ?? "",
+                                }}
+                              />
+                            )
+                          : undefined
+                      }
+                      onToggle={canWrite ? () => setCatalogActive("inventory_products", p.id, !p.is_active) : undefined}
+                      onDelete={
+                        canDelete && p.movementCount === 0 ? () => deleteCatalog("inventory_products", p.id) : undefined
+                      }
+                    />
                   </TableCell>
                 )}
               </TableRow>
@@ -153,9 +157,11 @@ export function ProductsTable({
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={3} className="font-medium">
-                Valor del inventario
+              <TableCell colSpan={2} className="font-medium md:col-span-1">
+                Valor del inventario ({formatNumber(filtered.length)} productos)
               </TableCell>
+              <TableCell className="hidden md:table-cell" />
+              <TableCell className="hidden lg:table-cell" />
               <TableCell className="hidden sm:table-cell" />
               <TableCell className="text-right font-semibold tabular-nums">{formatMoney(totalValue)}</TableCell>
               {(canWrite || canDelete) && <TableCell />}

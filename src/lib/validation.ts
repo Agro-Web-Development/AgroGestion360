@@ -66,7 +66,12 @@ export const optionalInteger = (min: number, max: number) =>
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
-const isValidDate = (v: string) => DATE_REGEX.test(v) && !Number.isNaN(new Date(`${v}T00:00:00Z`).getTime())
+/** Fecha AAAA-MM-DD existente (rechaza 2026-02-30, que Date recorre al 2 de marzo). */
+export const isValidDate = (v: string) => {
+  if (!DATE_REGEX.test(v)) return false
+  const d = new Date(`${v}T00:00:00Z`)
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v
+}
 
 export const requiredDate = (message = "Selecciona una fecha") =>
   z.string().trim().min(1, message).refine(isValidDate, "Fecha no válida")
@@ -77,6 +82,24 @@ export const optionalDate = () =>
     .trim()
     .refine((v) => v === "" || isValidDate(v), "Fecha no válida")
     .transform((v) => (v === "" ? null : v))
+
+/** Horas HH:MM (las columnas TIME llegan como HH:MM:SS y se recortan). */
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/
+
+export const optionalTime = () =>
+  z
+    .string()
+    .trim()
+    .refine((v) => v === "" || TIME_REGEX.test(v.slice(0, 5)), "Hora no válida")
+    .transform((v) => (v === "" ? null : v.slice(0, 5)))
+
+export const requiredTime = (message = "Indica la hora") =>
+  z
+    .string()
+    .trim()
+    .min(1, message)
+    .refine((v) => TIME_REGEX.test(v.slice(0, 5)), "Hora no válida")
+    .transform((v) => v.slice(0, 5))
 
 /** Valor centinela para "ninguno" en selects (Radix no admite value=""). */
 export const NONE = "__none__"

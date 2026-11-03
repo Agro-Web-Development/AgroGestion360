@@ -25,11 +25,17 @@ describe("inventario", () => {
     productId: UUID,
     type: "entrada",
     date: TODAY,
+    warehouseId: UUID2,
+    toWarehouseId: "",
     quantity: "100",
     unitCost: "9.80",
     projectId: "",
     plotId: "",
-    supplier: "",
+    lotId: "",
+    lotNumber: "",
+    lotExpiry: "",
+    supplierId: NONE,
+    responsibleId: NONE,
     reference: "",
     notes: "",
   } as const
@@ -61,13 +67,22 @@ describe("maquinaria y mano de obra", () => {
       plotId: NONE,
       date: TODAY,
       hours: "8",
-      hourlyRate: "",
+      rateBasis: "hora",
+      jornadas: "",
+      rate: "",
+      operatorId: NONE,
       operator: "",
+      activityTypeId: NONE,
       activity: "",
+      fuelQuantity: "",
+      fuelFromStock: false,
+      fuelProductId: "",
+      fuelWarehouseId: "",
+      fuelLotId: "",
       notes: "",
-    }
+    } as const
     const r = usageSchema.parse(usage)
-    expect(r.hourlyRate).toBeNull()
+    expect(r.rate).toBeNull()
     expect(r.plotId).toBeNull()
     expect(usageSchema.safeParse({ ...usage, hours: "25" }).success).toBe(false)
   })
@@ -79,6 +94,7 @@ describe("maquinaria y mano de obra", () => {
     employeeId: UUID,
     crew: "",
     date: TODAY,
+    activityTypeId: NONE,
     activity: "Deshierbe",
     payType: "jornal",
     quantity: "1",
