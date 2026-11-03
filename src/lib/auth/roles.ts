@@ -29,7 +29,7 @@ export const ROLE_DESCRIPTIONS: Record<AppRole, string> = {
   agronomo: "Administración de proyectos y actividades agrícolas.",
   supervisor: "Consulta y captura de actividades de campo.",
   almacen: "Control de inventarios y movimientos.",
-  finanzas: "Clientes, ventas, pagos y cuentas por cobrar.",
+  finanzas: "Presupuestos, gastos, flujo de efectivo, ventas y cobranza.",
   consulta: "Acceso de solo lectura.",
 }
 
@@ -56,6 +56,8 @@ export const PERMISSIONS = {
   "sales.write": ["propietario", "administrador", "finanzas"],
   "payments.write": ["propietario", "administrador", "finanzas"],
   "expenses.write": ["propietario", "administrador", "finanzas"],
+  "budgets.write": ["propietario", "administrador", "finanzas"],
+  "cash.write": ["propietario", "administrador", "finanzas"],
   "finance.read": ["propietario", "administrador", "finanzas", "consulta"],
 } as const satisfies Record<string, readonly AppRole[]>
 

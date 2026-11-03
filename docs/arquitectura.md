@@ -40,7 +40,10 @@ src/
       reportes/        reportes operativos con exportación CSV
       produccion/      indicadores, cortes, inventario de producto, movimientos; lotes/[id] (trazabilidad)
       comercial/       dashboard comercial (filtros de fechas, cultivo y proyecto)
-      clientes/ ([id] expediente) ventas/ (nueva, [id], [id]/editar) pagos/ gastos/
+      clientes/ ([id] expediente) ventas/ (nueva, [id], [id]/editar) pagos/
+      finanzas/        dashboard financiero (filtros de fechas, cultivo y proyecto)
+      presupuestos/    listado con alertas, [id] (comparativo y versiones), [id]/editar (nueva revisión)
+      gastos/ rentabilidad/ flujo-efectivo/ reportes-financieros/ (CSV, Excel y PDF)
       configuracion/   organizacion, usuarios, perfil
     auth/callback/     intercambio de código PKCE / token_hash
     auth/aceptar/      aceptación de invitaciones (tokens en el fragmento)
@@ -53,12 +56,15 @@ src/
                        SearchInput, CatalogRowActions
   features/<módulo>/   schemas.ts (Zod) · actions.ts · queries.ts · components/
                        (fieldlogs = bitácoras y evidencias; reports = agregaciones puras y CSV;
-                       harvests = cortes, lotes e inventario de producto; commercial = dashboard comercial)
+                       harvests = cortes, lotes e inventario de producto; commercial = dashboard comercial;
+                       finance = presupuestos, gastos, flujo de efectivo, análisis puro en analysis.ts)
   lib/
     supabase/          client, server, proxy, admin (server-only)
     auth/              roles.ts (matriz de permisos), session.ts (DAL)
     actions.ts         ActionResult y traducción de errores de BD
     format.ts          MXN, números y fechas (America/Mexico_City)
+    money.ts           importes en centavos / BigInt: sumas, redondeo y prorrateo idénticos a PostgreSQL
+    xlsx.ts            generador de .xlsx sin dependencias (ZIP sin compresión + SpreadsheetML)
     search-params.ts   lectura validada de filtros de la URL (fechas, UUID)
   types/database.ts    tipos generados por `supabase gen types`
 supabase/
@@ -345,9 +351,70 @@ comercial y dashboard comercial: lectura `finance.read`, escritura `sales.write`
 cobros por fecha de pago o de aplicación del anticipo) y saldos al día; con filtro de cultivo o proyecto, cada venta
 participa con sus partidas de ese filtro y su cobro y saldo se prorratean en la misma proporción.
 
+### Implementado (Fase 5 · administración financiera y rentabilidad)
+
+Migraciones `20261104050000_financial_enums.sql` (tipo de gasto `mantenimiento`) y `20261104050100_financial.sql`. Se
+**consolida** lo que ya registran los módulos: no hay un sistema financiero paralelo ni costos capturados dos veces.
+
+| Tabla / vista            | Propósito                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| project_budgets          | Versión del presupuesto de un proyecto: número, vigente, cultivo, superficie, periodo, total, motivo de revisión. Inmutable salvo `is_current`. |
+| project_budget_lines     | Partidas: categoría (12), concepto, unidad, cantidad, costo unitario e importe generado. Inmutables. |
+| finance_settings         | Umbrales de alerta por organización (aviso, crítico, agotado; 70/90/100 sin fila).            |
+| expenses                 | Encabezado del gasto: tipo, categoría presupuestal, concepto, proveedor, factura, método de pago, responsable, observaciones, criterio de reparto, pagado y estado. Se cancela, no se elimina. |
+| project_expenses (ampliada) | Ahora es la **asignación** del gasto a cada proyecto: importe, `allocation_share` y `allocation_basis` (ha, %, importe). Sin escrituras directas. |
+| cash_movements           | Pagos de gastos, pagos a proveedores y otros ingresos/egresos, con método, referencia y estado. |
+| v_project_cost_entries   | Agrega `cost_class` (7 clases), `budget_category` (12) y `origin_table`/`origin_id` (documento de origen). |
+| v_project_costs          | Agrega cultivo, versión de presupuesto, costo por clase, costo por tonelada, diferencia y restante, estado de alerta, existencia a costo, resultado estimado y margen. |
+| v_budget_comparison      | Presupuesto vigente contra costo real por proyecto y categoría, con diferencia, % y estado.  |
+
+RPC (transaccionales, `SECURITY DEFINER`, verifican rol, idempotentes por id del cliente):
+
+| Función                  | Qué hace                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `save_budget`            | Versión original o revisión (exige motivo y la versión base vigente); sincroniza `projects.budget_amount`. |
+| `register_expense`       | Gasto directo o compartido con su reparto (proyectos en orden de id, residuo al de mayor base) y, opcionalmente, su pago. |
+| `cancel_expense`         | Cancela con motivo si no tiene pagos y sus proyectos siguen vigentes.                      |
+| `register_cash_movement` · `cancel_cash_movement` | Movimientos de efectivo; un pago de gasto bloquea el gasto y nunca excede su saldo. |
+| `cash_flow_entries`      | Flujo del periodo (cobros, anticipos, pagos y otros), prorrateado al filtrar por proyecto (`SECURITY INVOKER`). |
+| `financial_series`       | Series del dashboard financiero (costos, ventas y cobranza por mes) (`SECURITY INVOKER`).  |
+
+**Clasificación de costos** (funciones `input_cost_class`, `input_budget_category`, `expense_cost_class`,
+`expense_default_budget_category`, reflejadas en `features/finance/schemas.ts`):
+
+| Origen                     | Clase                          | Categoría presupuestal                               |
+| -------------------------- | ------------------------------ | ---------------------------------------------------- |
+| Consumo de inventario      | insumos (combustibles si es combustible) | por clasificación del insumo: semillas, fertilizantes, agroquímicos (incluye biológicos), combustible, otros |
+| Mano de obra               | mano de obra                   | mano de obra                                          |
+| Uso de maquinaria          | maquinaria                     | maquinaria                                            |
+| Costo adicional de actividad | servicios                    | la del tipo de actividad (configurable en el catálogo) |
+| Gasto                      | mantenimiento, servicios (agua, energía, fletes, maquila, asesoría) o gastos adicionales | la elegida en el gasto (preparación de terreno, riego, mantenimiento, cosecha, transporte, otros) |
+
+Reglas en base de datos:
+
+- **Presupuestos inmutables:** un trigger impide modificar o eliminar versiones y partidas (solo cambia `is_current`, y
+  se permite la cascada al eliminar el proyecto). Un índice único garantiza una sola versión vigente. Con presupuesto
+  detallado, `projects.budget_amount` solo lo cambia `save_budget` (trigger `guard_project_budget_amount`).
+- **Sin duplicidad:** un gasto no acepta categorías que nacen en inventario, personal o maquinaria (CHECK y RPC); una
+  factura de un proveedor se registra una sola vez en la organización (índice único parcial sobre gastos vigentes); un
+  proyecto aparece una vez por gasto.
+- **Reparto exacto:** la suma de las asignaciones es el importe del gasto al centavo; el criterio y la base quedan guardados.
+- **Registrado ≠ pagado:** `expenses.paid_amount` solo cambia con movimientos de efectivo (`0 ≤ pagado ≤ importe`); un gasto
+  cancelado no conserva pagos.
+- **Concurrencia:** gasto → proyectos `FOR SHARE` en orden de id; pago: gasto `FOR UPDATE` → movimiento; revisión de
+  presupuesto: proyecto `FOR UPDATE` y verificación de la versión base.
+- **Cierre:** un proyecto cerrado no recibe gastos ni revisiones de presupuesto; los pagos sí se registran (flujo, no costo).
+
+**Acceso:** presupuestos, gastos, movimientos de efectivo, comparativos y reportes financieros: lectura `finance.read`
+(propietario, administrador, finanzas, consulta); escritura `budgets.write`, `expenses.write`, `cash.write` (propietario,
+administrador, finanzas). Los comprobantes de gastos (imagen o PDF) siguen la protección de los comprobantes de pago.
+
+**Resultado estimado** = ventas reconocidas (confirmadas) − costo de producción acumulado. Ver decisión 66.
+
 ### Pendiente
 
-- Presupuestos por categoría (`project_budgets`) y reportes en XLSX/PDF.
+- Cuentas por pagar de compras de almacén (hoy el pago a proveedor se registra sin ligarse a la entrada).
+- Presupuestos de gastos generales no imputables a un proyecto (administración, depreciación) y estado de resultados.
 - Inventario: costo PEPS por lote, devoluciones a proveedor, conteos físicos programados.
 - Edición de registros de costo (uso de maquinaria y jornadas) en lugar de eliminar y volver a capturar.
 - Ventas: anticipos sin venta, notas de crédito, devoluciones parciales de producto y CFDI.
@@ -361,5 +428,6 @@ participa con sus partidas de ese filtro y su cobro y saldo se prorratean en la 
    actividades con evidencias; maquinaria con mantenimiento; personal con asistencia y cuadrillas; reportes.
 4. ✅ Cortes y lotes de producción, inventario de producto con mermas, clientes, ventas con borrador y entregas,
    pagos y anticipos, cuentas por cobrar, trazabilidad por lote y dashboard comercial.
-5. ✅ Gastos, costos, rentabilidad · ⏳ presupuestos por categoría, reportes XLSX/PDF.
+5. ✅ Presupuestos con versiones, gastos directos y compartidos, consolidación de costos, rentabilidad, flujo de efectivo,
+   alertas configurables, dashboard financiero y reportes en CSV, Excel y PDF.
 6. PWA, captura sin conexión con sincronización, pruebas E2E, endurecimiento y despliegue.

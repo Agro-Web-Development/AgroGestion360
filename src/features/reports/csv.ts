@@ -29,3 +29,14 @@ export function toCsv(columns: ReportColumn[], rows: readonly object[]): string 
   const header = columns.map((c) => escape(c.unit ? `${c.header} (${c.unit})` : c.header)).join(",")
   return `\uFEFF${[header, ...rows.map((r) => columns.map((c) => escape(cell(r, c.key))).join(","))].join("\r\n")}`
 }
+
+/** Renglones para Excel: números y fechas sin formatear (el formato lo da la hoja). */
+export function toXlsxRows(columns: ReportColumn[], rows: readonly object[]): (string | number | null)[][] {
+  return rows.map((r) =>
+    columns.map((c) => {
+      const v = cell(r, c.key)
+      if (v === null) return null
+      return (c.format === "money" || c.format === "number") && v !== "" ? Number(v) : v
+    })
+  )
+}

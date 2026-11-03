@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "activity_types": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"organization_id": string,"updated_at": string,"updated_by": string | null
+                    "cost_category": Database["public"]['Enums']["budget_category"],"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"organization_id": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
+                    "cost_category"?: Database["public"]['Enums']["budget_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "cost_category"?: Database["public"]['Enums']["budget_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -145,6 +145,50 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"cash_movements": {
+                  Row: {
+                    "amount": number,"cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"concept": string,"created_at": string,"created_by": string | null,"direction": string | null,"expense_id": string | null,"id": string,"kind": Database["public"]['Enums']["cash_kind"],"method": Database["public"]['Enums']["payment_method"],"movement_date": string,"notes": string | null,"organization_id": string,"project_id": string | null,"reference": string | null,"status": Database["public"]['Enums']["payment_status"],"supplier_id": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"concept": string,"created_at"?: string,"created_by"?: string | null,"direction"?: never,"expense_id"?: string | null,"id": string,"kind": Database["public"]['Enums']["cash_kind"],"method": Database["public"]['Enums']["payment_method"],"movement_date": string,"notes"?: string | null,"organization_id": string,"project_id"?: string | null,"reference"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"supplier_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "amount"?: number,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"concept"?: string,"created_at"?: string,"created_by"?: string | null,"direction"?: never,"expense_id"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["cash_kind"],"method"?: Database["public"]['Enums']["payment_method"],"movement_date"?: string,"notes"?: string | null,"organization_id"?: string,"project_id"?: string | null,"reference"?: string | null,"status"?: Database["public"]['Enums']["payment_status"],"supplier_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cash_movements_organization_id_expense_id_fkey"
+      columns: ["organization_id","expense_id"]
+isOneToOne: false
+      referencedRelation: "expenses"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "cash_movements_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cash_movements_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "cash_movements_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "cash_movements_organization_id_supplier_id_fkey"
+      columns: ["organization_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"chemical_applications": {
@@ -389,6 +433,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"expenses": {
+                  Row: {
+                    "allocation_method": Database["public"]['Enums']["allocation_method"],"amount": number,"cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"category": Database["public"]['Enums']["expense_category"],"cost_category": Database["public"]['Enums']["budget_category"],"created_at": string,"created_by": string | null,"description": string,"expense_date": string,"id": string,"invoice_ref": string | null,"notes": string | null,"organization_id": string,"paid_amount": number,"payment_method": Database["public"]['Enums']["payment_method"] | null,"responsible_id": string | null,"status": Database["public"]['Enums']["log_status"],"supplier_id": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allocation_method"?: Database["public"]['Enums']["allocation_method"],"amount": number,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"category": Database["public"]['Enums']["expense_category"],"cost_category": Database["public"]['Enums']["budget_category"],"created_at"?: string,"created_by"?: string | null,"description": string,"expense_date": string,"id": string,"invoice_ref"?: string | null,"notes"?: string | null,"organization_id": string,"paid_amount"?: number,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"supplier_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "allocation_method"?: Database["public"]['Enums']["allocation_method"],"amount"?: number,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"category"?: Database["public"]['Enums']["expense_category"],"cost_category"?: Database["public"]['Enums']["budget_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string,"expense_date"?: string,"id"?: string,"invoice_ref"?: string | null,"notes"?: string | null,"organization_id"?: string,"paid_amount"?: number,"payment_method"?: Database["public"]['Enums']["payment_method"] | null,"responsible_id"?: string | null,"status"?: Database["public"]['Enums']["log_status"],"supplier_id"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "expenses_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_organization_id_supplier_id_fkey"
+      columns: ["organization_id","supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "expenses_responsible_id_fkey"
+      columns: ["responsible_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"farms": {
                   Row: {
                     "address": string | null,"code": string | null,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"latitude": number | null,"longitude": number | null,"municipality": string | null,"name": string,"notes": string | null,"organization_id": string,"state": string | null,"total_area_ha": number | null,"updated_at": string,"updated_by": string | null
@@ -457,6 +533,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "project_plots"
       referencedColumns: ["project_id","plot_id"]
+    }
+                  ]
+                },"finance_settings": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"critical_pct": number,"exhausted_pct": number,"id": string,"organization_id": string,"updated_at": string,"updated_by": string | null,"warning_pct": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"critical_pct"?: number,"exhausted_pct"?: number,"id"?: string,"organization_id": string,"updated_at"?: string,"updated_by"?: string | null,"warning_pct"?: number
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"critical_pct"?: number,"exhausted_pct"?: number,"id"?: string,"organization_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"warning_pct"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "finance_settings_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: true
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
     }
                   ]
                 },"harvests": {
@@ -1127,19 +1223,83 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
-                },"project_expenses": {
+                },"project_budget_lines": {
                   Row: {
-                    "amount": number,"category": Database["public"]['Enums']["expense_category"],"created_at": string,"created_by": string | null,"description": string,"expense_date": string,"id": string,"invoice_ref": string | null,"notes": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"supplier": string | null,"updated_at": string,"updated_by": string | null
+                    "amount": number | null,"budget_id": string,"category": Database["public"]['Enums']["budget_category"],"concept": string,"id": string,"line_no": number,"organization_id": string,"quantity": number,"unit": string | null,"unit_cost": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"category": Database["public"]['Enums']["expense_category"],"created_at"?: string,"created_by"?: string | null,"description": string,"expense_date": string,"id"?: string,"invoice_ref"?: string | null,"notes"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"supplier"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                    "amount"?: never,"budget_id": string,"category": Database["public"]['Enums']["budget_category"],"concept": string,"id"?: string,"line_no": number,"organization_id": string,"quantity": number,"unit"?: string | null,"unit_cost": number
                   }
                   Update: {
-                    "amount"?: number,"category"?: Database["public"]['Enums']["expense_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string,"expense_date"?: string,"id"?: string,"invoice_ref"?: string | null,"notes"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"supplier"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                    "amount"?: never,"budget_id"?: string,"category"?: Database["public"]['Enums']["budget_category"],"concept"?: string,"id"?: string,"line_no"?: number,"organization_id"?: string,"quantity"?: number,"unit"?: string | null,"unit_cost"?: number
                   }
                   Relationships: [
                     {
+      foreignKeyName: "project_budget_lines_organization_id_budget_id_fkey"
+      columns: ["organization_id","budget_id"]
+isOneToOne: false
+      referencedRelation: "project_budgets"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"project_budgets": {
+                  Row: {
+                    "area_ha": number,"created_at": string,"created_by": string | null,"crop_id": string,"id": string,"is_current": boolean,"notes": string | null,"organization_id": string,"period_end": string,"period_start": string,"project_id": string,"revision_reason": string | null,"total": number,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_ha": number,"created_at"?: string,"created_by"?: string | null,"crop_id": string,"id": string,"is_current": boolean,"notes"?: string | null,"organization_id": string,"period_end": string,"period_start": string,"project_id": string,"revision_reason"?: string | null,"total": number,"version": number
+                  }
+                  Update: {
+                    "area_ha"?: number,"created_at"?: string,"created_by"?: string | null,"crop_id"?: string,"id"?: string,"is_current"?: boolean,"notes"?: string | null,"organization_id"?: string,"period_end"?: string,"period_start"?: string,"project_id"?: string,"revision_reason"?: string | null,"total"?: number,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_budgets_organization_id_crop_id_fkey"
+      columns: ["organization_id","crop_id"]
+isOneToOne: false
+      referencedRelation: "crops"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "project_budgets_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_budgets_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "project_budgets_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    }
+                  ]
+                },"project_expenses": {
+                  Row: {
+                    "allocation_basis": number,"allocation_share": number,"amount": number,"created_at": string,"created_by": string | null,"expense_date": string,"expense_id": string,"id": string,"organization_id": string,"plot_id": string | null,"project_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allocation_basis": number,"allocation_share": number,"amount": number,"created_at"?: string,"created_by"?: string | null,"expense_date": string,"expense_id": string,"id"?: string,"organization_id": string,"plot_id"?: string | null,"project_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "allocation_basis"?: number,"allocation_share"?: number,"amount"?: number,"created_at"?: string,"created_by"?: string | null,"expense_date"?: string,"expense_id"?: string,"id"?: string,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_expenses_expense_fkey"
+      columns: ["organization_id","expense_id"]
+isOneToOne: false
+      referencedRelation: "expenses"
+      referencedColumns: ["organization_id","id"]
+    },{
       foreignKeyName: "project_expenses_organization_id_fkey"
       columns: ["organization_id"]
 isOneToOne: false
@@ -1444,7 +1604,15 @@ isOneToOne: false
                 }
           }
           Views: {
-            "v_inventory_stock": {
+            "v_budget_comparison": {
+                  Row: {
+                    "actual_amount": number | null,"budget_amount": number | null,"category": Database["public"]['Enums']["budget_category"] | null,"code": string,"difference": number | null,"name": string,"organization_id": string | null,"project_id": string | null,"project_status": Database["public"]['Enums']["project_status"],"status": string | null,"used_pct": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"v_inventory_stock": {
                   Row: {
                     "avg_cost": number | null,"category_id": string,"category_kind": Database["public"]['Enums']["input_kind"],"category_name": string,"days_to_expiry": number | null,"estimated_value": number | null,"expiry_date": string | null,"id": string,"lot_id": string | null,"lot_number": string | null,"organization_id": string,"product_active": boolean,"product_id": string,"product_name": string,"quantity": number,"sku": string | null,"unit": string,"updated_at": string,"warehouse_id": string,"warehouse_name": string
                   }
@@ -1492,7 +1660,7 @@ isOneToOne: false
                   ]
                 },"v_project_cost_entries": {
                   Row: {
-                    "amount": number | null,"concept": string | null,"created_at": string | null,"detail": string | null,"entry_date": string | null,"expense_category": Database["public"]['Enums']["expense_category"] | null,"organization_id": string | null,"plot_id": string | null,"project_id": string | null,"source": string | null,"source_id": string | null
+                    "amount": number | null,"budget_category": Database["public"]['Enums']["budget_category"] | null,"concept": string | null,"cost_class": string | null,"created_at": string | null,"detail": string | null,"entry_date": string | null,"expense_category": Database["public"]['Enums']["expense_category"] | null,"organization_id": string | null,"origin_id": string | null,"origin_table": string | null,"plot_id": string | null,"project_id": string | null,"source": string | null,"source_id": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1500,11 +1668,17 @@ isOneToOne: false
                   ]
                 },"v_project_costs": {
                   Row: {
-                    "activities_cost": number | null,"area_ha": number | null,"available_kg": number | null,"budget_amount": number | null,"budget_used_pct": number | null,"code": string,"collected_amount": number | null,"cost_per_ha": number | null,"cost_per_kg": number | null,"cuts": number | null,"expenses_cost": number | null,"gross_profit": number | null,"harvested_kg": number | null,"inputs_cost": number | null,"labor_cost": number | null,"lots": number | null,"machinery_cost": number | null,"name": string,"organization_id": string,"project_id": string,"receivable_amount": number | null,"sales_amount": number | null,"shrinkage_kg": number | null,"sold_kg": number | null,"status": Database["public"]['Enums']["project_status"],"total_cost": number | null,"yield_kg_per_ha": number | null
+                    "activities_cost": number | null,"area_ha": number | null,"available_kg": number | null,"budget_amount": number | null,"budget_id": string | null,"budget_remaining": number | null,"budget_status": string | null,"budget_used_pct": number | null,"budget_variance": number | null,"budget_version": number | null,"code": string,"collected_amount": number | null,"cost_per_ha": number | null,"cost_per_kg": number | null,"cost_per_ton": number | null,"crop_id": string,"crop_name": string | null,"cuts": number | null,"estimated_result": number | null,"expenses_cost": number | null,"fuel_cost": number | null,"gross_profit": number | null,"harvested_kg": number | null,"inputs_cost": number | null,"labor_cost": number | null,"lots": number | null,"machinery_cost": number | null,"maintenance_cost": number | null,"margin_pct": number | null,"materials_cost": number | null,"name": string,"organization_id": string,"other_cost": number | null,"project_id": string,"receivable_amount": number | null,"sales_amount": number | null,"services_cost": number | null,"shrinkage_kg": number | null,"sold_kg": number | null,"start_date": string,"status": Database["public"]['Enums']["project_status"],"stock_value_at_cost": number | null,"total_cost": number | null,"yield_kg_per_ha": number | null
                   }
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "projects_organization_id_crop_id_fkey"
+      columns: ["organization_id","crop_id"]
+isOneToOne: false
+      referencedRelation: "crops"
+      referencedColumns: ["organization_id","id"]
+    },{
       foreignKeyName: "projects_organization_id_fkey"
       columns: ["organization_id"]
 isOneToOne: false
@@ -1596,14 +1770,23 @@ isOneToOne: false
 "attachment_roles":
 { Args: { "p_entity": string,"p_write": boolean }; Returns: (Database["public"]['Enums']["app_role"])[]
                            },
+"budget_status":
+{ Args: { "p_actual": number,"p_budget": number,"p_critical": number,"p_exhausted": number,"p_warning": number }; Returns: string
+                           },
 "cancel_advance_application":
 { Args: { "p_application": string,"p_reason": string }; Returns: undefined
+                           },
+"cancel_cash_movement":
+{ Args: { "p_movement": string,"p_reason": string }; Returns: undefined
                            },
 "cancel_chemical_application":
 { Args: { "p_id": string,"p_reason": string }; Returns: undefined
                            },
 "cancel_delivery":
 { Args: { "p_delivery": string,"p_reason": string }; Returns: undefined
+                           },
+"cancel_expense":
+{ Args: { "p_expense": string,"p_reason": string }; Returns: undefined
                            },
 "cancel_field_record":
 { Args: { "p_id": string,"p_kind": string,"p_reason": string }; Returns: undefined
@@ -1616,6 +1799,11 @@ isOneToOne: false
                            },
 "cancel_sale":
 { Args: { "p_reason": string,"p_sale": string }; Returns: undefined
+                           },
+"cash_flow_entries":
+{ Args: { "p_from": string,"p_org": string,"p_project"?: string,"p_to": string }; Returns: {
+              "amount": number,"concept": string,"counterparty": string,"direction": string,"entry_date": string,"entry_id": string,"kind": string,"method": Database["public"]['Enums']["payment_method"],"project_id": string,"reference": string,"source": string
+            }[]
                            },
 "change_project_status":
 { Args: { "p_note"?: string,"p_project": string,"p_status": Database["public"]['Enums']["project_status"] }; Returns: undefined
@@ -1635,11 +1823,26 @@ isOneToOne: false
 "dashboard_summary":
 { Args: { "p_org": string }; Returns: Json
                            },
+"expense_cost_class":
+{ Args: { "p_category": Database["public"]['Enums']["expense_category"] }; Returns: string
+                           },
+"expense_default_budget_category":
+{ Args: { "p_category": Database["public"]['Enums']["expense_category"] }; Returns: Database["public"]['Enums']["budget_category"]
+                           },
 "finance_summary":
 { Args: { "p_org": string }; Returns: Json
                            },
+"financial_series":
+{ Args: { "p_crop"?: string,"p_from": string,"p_org": string,"p_project"?: string,"p_to": string }; Returns: Json
+                           },
 "has_role":
 { Args: { "p_org": string,"p_roles": (Database["public"]['Enums']["app_role"])[] }; Returns: boolean
+                           },
+"input_budget_category":
+{ Args: { "p_kind": Database["public"]['Enums']["input_kind"] }; Returns: Database["public"]['Enums']["budget_category"]
+                           },
+"input_cost_class":
+{ Args: { "p_kind": Database["public"]['Enums']["input_kind"] }; Returns: string
                            },
 "inventory_outflow_value":
 { Args: { "p_product": Omit<Database["public"]['Tables']["inventory_products"]['Row'], Database["public"]['Tables']["inventory_products"]['ComputedFields']>,"p_quantity": number }; Returns: number
@@ -1684,6 +1887,11 @@ isOneToOne: false
 "next_folio":
 { Args: { "p_org": string,"p_prefix": string,"p_scope": string }; Returns: string
                            },
+"parse_budget_lines":
+{ Args: { "p_lines": Json }; Returns: {
+              "category": Database["public"]['Enums']["budget_category"],"concept": string,"line_no": number,"quantity": number,"unit": string,"unit_cost": number
+            }[]
+                           },
 "parse_sale_lines":
 { Args: { "p_items": Json }; Returns: {
               "description": string,"discount": number,"harvest_id": string,"line": number,"quantity": number,"unit": string,"unit_price": number,"unit_weight_kg": number
@@ -1713,6 +1921,9 @@ isOneToOne: false
 "refresh_sale_status":
 { Args: { "p_sale": string }; Returns: undefined
                            },
+"register_cash_movement":
+{ Args: { "p_amount": number,"p_concept"?: string,"p_date": string,"p_expense"?: string,"p_id": string,"p_kind": Database["public"]['Enums']["cash_kind"],"p_method": Database["public"]['Enums']["payment_method"],"p_notes"?: string,"p_org": string,"p_project"?: string,"p_reference"?: string,"p_supplier"?: string }; Returns: string
+                           },
 "register_chemical_application":
 { Args: { "p_active_ingredient"?: string,"p_date": string,"p_equipment"?: string,"p_id": string,"p_issue_from_stock"?: boolean,"p_lot"?: string,"p_lot_number"?: string,"p_machine"?: string,"p_notes"?: string,"p_plot": string,"p_preharvest_days"?: number,"p_product": string,"p_project": string,"p_quantity": number,"p_reentry_hours"?: number,"p_responsible"?: string,"p_time"?: string,"p_treated_area": number,"p_warehouse"?: string }; Returns: string
                            },
@@ -1721,6 +1932,9 @@ isOneToOne: false
                            },
 "register_delivery":
 { Args: { "p_date": string,"p_id": string,"p_items"?: Json,"p_notes"?: string,"p_received_by"?: string,"p_sale": string,"p_transport"?: string }; Returns: string
+                           },
+"register_expense":
+{ Args: { "p_allocation_method": Database["public"]['Enums']["allocation_method"],"p_allocations": Json,"p_amount": number,"p_category": Database["public"]['Enums']["expense_category"],"p_cost_category": Database["public"]['Enums']["budget_category"],"p_date": string,"p_description": string,"p_id": string,"p_invoice_ref"?: string,"p_notes"?: string,"p_org": string,"p_payment"?: Json,"p_payment_method"?: Database["public"]['Enums']["payment_method"],"p_responsible"?: string,"p_supplier"?: string }; Returns: string
                            },
 "register_inventory_movement":
 { Args: { "p_date": string,"p_id": string,"p_lot"?: string,"p_lot_expiry"?: string,"p_lot_number"?: string,"p_notes"?: string,"p_plot"?: string,"p_product": string,"p_project"?: string,"p_quantity": number,"p_reference"?: string,"p_responsible"?: string,"p_supplier"?: string,"p_to_warehouse"?: string,"p_type": Database["public"]['Enums']["inventory_movement_type"],"p_unit_cost"?: number,"p_warehouse"?: string }; Returns: string
@@ -1743,6 +1957,9 @@ isOneToOne: false
 "sale_is_active":
 { Args: { "p_status": Database["public"]['Enums']["sale_status"] }; Returns: boolean
                            },
+"save_budget":
+{ Args: { "p_area_ha"?: number,"p_base_version"?: number,"p_id": string,"p_lines": Json,"p_notes"?: string,"p_period_end": string,"p_period_start": string,"p_project": string,"p_reason"?: string }; Returns: string
+                           },
 "save_sale":
 { Args: { "p_confirm"?: boolean,"p_customer": string,"p_delivery_date"?: string,"p_due_date"?: string,"p_id": string,"p_items": Json,"p_notes"?: string,"p_sale_date": string }; Returns: string
                            },
@@ -1763,7 +1980,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","attendance_status": "presente"|"falta"|"permiso"|"incapacidad"|"descanso","customer_type": "mayorista"|"minorista"|"empacadora"|"exportadora"|"industria"|"intermediario"|"otro","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_kind": "semilla"|"fertilizante"|"agroquimico"|"biologico"|"combustible"|"herramienta"|"material"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida"|"transferencia","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","log_status": "registrado"|"cancelado","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","machine_rate_basis": "hora"|"jornada","machine_status": "operativa"|"en_mantenimiento"|"fuera_servicio"|"baja","maintenance_kind": "preventivo"|"correctivo","membership_status": "activo"|"inactivo","payment_kind": "pago"|"anticipo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","produce_unit": "kg"|"t"|"caja"|"saco"|"arpilla"|"reja","production_movement_type": "venta"|"cancelacion_venta"|"merma"|"perdida"|"ajuste_entrada"|"ajuste_salida"|"reverso_ajuste","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "borrador"|"confirmada"|"entregada"|"parcialmente_pagada"|"pagada"|"cancelada","worker_type": "planta"|"eventual"|"temporal"|"destajista"
+            "allocation_method": "directo"|"superficie"|"partes_iguales"|"porcentaje"|"importe","app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","attendance_status": "presente"|"falta"|"permiso"|"incapacidad"|"descanso","budget_category": "preparacion_terreno"|"semillas"|"fertilizantes"|"agroquimicos"|"riego"|"mano_obra"|"maquinaria"|"combustible"|"mantenimiento"|"cosecha"|"transporte"|"otros","cash_kind": "pago_gasto"|"pago_proveedor"|"otro_ingreso"|"otro_egreso","customer_type": "mayorista"|"minorista"|"empacadora"|"exportadora"|"industria"|"intermediario"|"otro","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"mantenimiento"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_kind": "semilla"|"fertilizante"|"agroquimico"|"biologico"|"combustible"|"herramienta"|"material"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida"|"transferencia","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","log_status": "registrado"|"cancelado","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","machine_rate_basis": "hora"|"jornada","machine_status": "operativa"|"en_mantenimiento"|"fuera_servicio"|"baja","maintenance_kind": "preventivo"|"correctivo","membership_status": "activo"|"inactivo","payment_kind": "pago"|"anticipo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","produce_unit": "kg"|"t"|"caja"|"saco"|"arpilla"|"reja","production_movement_type": "venta"|"cancelacion_venta"|"merma"|"perdida"|"ajuste_entrada"|"ajuste_salida"|"reverso_ajuste","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "borrador"|"confirmada"|"entregada"|"parcialmente_pagada"|"pagada"|"cancelada","worker_type": "planta"|"eventual"|"temporal"|"destajista"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1883,7 +2100,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"attendance_status": ["presente", "falta", "permiso", "incapacidad", "descanso"],"customer_type": ["mayorista", "minorista", "empacadora", "exportadora", "industria", "intermediario", "otro"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_kind": ["semilla", "fertilizante", "agroquimico", "biologico", "combustible", "herramienta", "material", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida", "transferencia"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"log_status": ["registrado", "cancelado"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"machine_rate_basis": ["hora", "jornada"],"machine_status": ["operativa", "en_mantenimiento", "fuera_servicio", "baja"],"maintenance_kind": ["preventivo", "correctivo"],"membership_status": ["activo", "inactivo"],"payment_kind": ["pago", "anticipo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"produce_unit": ["kg", "t", "caja", "saco", "arpilla", "reja"],"production_movement_type": ["venta", "cancelacion_venta", "merma", "perdida", "ajuste_entrada", "ajuste_salida", "reverso_ajuste"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["borrador", "confirmada", "entregada", "parcialmente_pagada", "pagada", "cancelada"],"worker_type": ["planta", "eventual", "temporal", "destajista"]
+            "allocation_method": ["directo", "superficie", "partes_iguales", "porcentaje", "importe"],"app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"attendance_status": ["presente", "falta", "permiso", "incapacidad", "descanso"],"budget_category": ["preparacion_terreno", "semillas", "fertilizantes", "agroquimicos", "riego", "mano_obra", "maquinaria", "combustible", "mantenimiento", "cosecha", "transporte", "otros"],"cash_kind": ["pago_gasto", "pago_proveedor", "otro_ingreso", "otro_egreso"],"customer_type": ["mayorista", "minorista", "empacadora", "exportadora", "industria", "intermediario", "otro"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "mantenimiento", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_kind": ["semilla", "fertilizante", "agroquimico", "biologico", "combustible", "herramienta", "material", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida", "transferencia"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"log_status": ["registrado", "cancelado"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"machine_rate_basis": ["hora", "jornada"],"machine_status": ["operativa", "en_mantenimiento", "fuera_servicio", "baja"],"maintenance_kind": ["preventivo", "correctivo"],"membership_status": ["activo", "inactivo"],"payment_kind": ["pago", "anticipo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"produce_unit": ["kg", "t", "caja", "saco", "arpilla", "reja"],"production_movement_type": ["venta", "cancelacion_venta", "merma", "perdida", "ajuste_entrada", "ajuste_salida", "reverso_ajuste"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["borrador", "confirmada", "entregada", "parcialmente_pagada", "pagada", "cancelada"],"worker_type": ["planta", "eventual", "temporal", "destajista"]
           }
         }
 } as const

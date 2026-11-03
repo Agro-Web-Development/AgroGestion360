@@ -73,7 +73,7 @@ export async function getActivityTypes() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("activity_types")
-    .select("id, name, description, is_active, field_activities(count), labor_records(count)")
+    .select("id, name, description, cost_category, is_active, field_activities(count), labor_records(count)")
     .eq("organization_id", ctx.organization.id)
     .order("is_active", { ascending: false })
     .order("name")

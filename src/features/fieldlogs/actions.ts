@@ -17,6 +17,7 @@ import {
   attachmentFileSchema,
   attachmentTypes,
   FIELD_RECORD_KINDS,
+  isReceiptEntity,
   irrigationSchema,
   MAX_ATTACHMENTS_PER_UPLOAD,
   type ActivityInput,
@@ -240,7 +241,8 @@ export async function saveActivityType(input: ActivityTypeInput): Promise<Action
   const ctx = await getOrgContext()
   if (!can(ctx.role, "catalogs.write")) return failure("No tienes permiso para administrar el catálogo de actividades.")
 
-  const { id, ...v } = parsed.data
+  const { id, costCategory, ...rest } = parsed.data
+  const v = { ...rest, cost_category: costCategory }
   const supabase = await createClient()
   const { data, error } = id
     ? await supabase
@@ -331,7 +333,7 @@ export async function registerAttachments(
     .safeParse(files)
   if (!parsed.success) {
     return failure(
-      entity === "payment"
+      isReceiptEntity(entity)
         ? "Revisa los comprobantes: imágenes o PDF de hasta 10 MB."
         : "Revisa las fotografías: solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB."
     )
@@ -359,7 +361,7 @@ export async function registerAttachments(
   }
 
   refresh()
-  const noun = entity === "payment" ? ["Comprobante agregado.", "comprobantes agregados."] : ["Fotografía agregada.", "fotografías agregadas."]
+  const noun = isReceiptEntity(entity) ? ["Comprobante agregado.", "comprobantes agregados."] : ["Fotografía agregada.", "fotografías agregadas."]
   return success(undefined, parsed.data.length === 1 ? noun[0] : `${parsed.data.length} ${noun[1]}`)
 }
 
@@ -390,8 +392,8 @@ export async function listAttachments(entity: AttachmentEntity, entityId: string
       mimeType: a.mime_type,
       url: urls.get(a.storage_path) ?? null,
       createdAt: a.created_at,
-      // Un comprobante de pago solo lo retira propietario o administrador (igual que la RLS).
-      canDelete: admin || (entity !== "payment" && a.created_by === ctx.user.id && can(ctx.role, ATTACHMENT_PERMISSION[entity])),
+      // Un comprobante solo lo retira propietario o administrador (igual que la RLS).
+      canDelete: admin || (!isReceiptEntity(entity) && a.created_by === ctx.user.id && can(ctx.role, ATTACHMENT_PERMISSION[entity])),
     }))
   )
 }

@@ -13,7 +13,7 @@ import { getProjectOperations, getProjectTimeline } from "@/features/fieldlogs/q
 import { formatDuration } from "@/features/fieldlogs/schemas"
 import { CostEntriesTable } from "@/features/finance/components/cost-entries-table"
 import { ProjectFinanceCard } from "@/features/finance/components/project-finance-card"
-import { getProjectCost, getProjectCostEntries } from "@/features/finance/queries"
+import { getFinanceSettings, getProjectCost, getProjectCostEntries } from "@/features/finance/queries"
 import { LotsTable } from "@/features/harvests/components/production-tables"
 import { getProjectHarvests } from "@/features/harvests/queries"
 import { getAssignments } from "@/features/labor/queries"
@@ -50,13 +50,14 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
     getAssignments(project.id),
     getProjectHarvests(project.id),
   ])
-  const [costs, costEntries, trace] = canSeeFinance
+  const [costs, costEntries, trace, thresholds] = canSeeFinance
     ? await Promise.all([
         getProjectCost(project.id),
         getProjectCostEntries(project.id, COST_ENTRY_LIMIT),
         getLotTrace({ projectId: project.id }),
+        getFinanceSettings(),
       ])
-    : [null, [], []]
+    : [null, [], [], undefined]
   const saleIds = [...new Set(trace.map((t) => t.saleId))]
   const payments = saleIds.length > 0 ? await getPayments({ saleIds, includeCancelled: true }) : []
   const produced = lots.reduce((t, l) => t + Number(l.quantity_kg), 0)
@@ -448,7 +449,7 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
               )}
             </CardContent>
           </Card>
-          {canSeeFinance && costs && <ProjectFinanceCard costs={costs} />}
+          {canSeeFinance && costs && <ProjectFinanceCard costs={costs} thresholds={thresholds} />}
         </div>
       </div>
     </>

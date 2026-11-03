@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { IRRIGATION_LABELS } from "@/features/farms/schemas"
+import { BUDGET_CATEGORY_LABELS } from "@/features/finance/schemas"
 import type { OpenProject } from "@/features/projects/queries"
 import { isClosed, type ProjectStatus } from "@/features/projects/status"
 import type { ActionResult } from "@/lib/actions"
@@ -519,6 +520,7 @@ export function ActivityTypesTable({
                   )}
                 </p>
                 {t.description && <p className="text-xs text-muted-foreground">{t.description}</p>}
+                <p className="text-xs text-muted-foreground">Costo adicional: {BUDGET_CATEGORY_LABELS[t.cost_category]}</p>
               </TableCell>
               <TableCell className="text-right tabular-nums">{formatNumber(t.useCount)}</TableCell>
               {(canWrite || canDelete) && (
@@ -531,7 +533,7 @@ export function ActivityTypesTable({
                         ? (trigger) => (
                             <ActivityTypeDialog
                               trigger={trigger}
-                              activityType={{ id: t.id, name: t.name, description: t.description ?? "" }}
+                              activityType={{ id: t.id, name: t.name, description: t.description ?? "", costCategory: t.cost_category }}
                             />
                           )
                         : undefined

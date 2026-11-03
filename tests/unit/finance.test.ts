@@ -131,17 +131,25 @@ describe("gastos y cosechas", () => {
   it("normaliza el folio de factura", () => {
     const r = expenseSchema.parse({
       id: UUID,
-      projectId: UUID,
-      plotId: "",
+      paymentId: UUID,
       date: TODAY,
       category: "fletes",
+      costCategory: "transporte",
       description: "Flete",
-      supplier: "",
-      invoiceRef: "tfe-1290",
       amount: "28,500",
+      supplierId: "",
+      invoiceRef: "tfe-1290",
+      paymentMethod: NONE,
+      allocationMethod: "directo",
+      allocations: [{ projectId: UUID, plotId: "", value: "" }],
+      responsibleId: "",
       notes: "",
+      paidNow: false,
+      paymentDate: "",
+      paymentReference: "",
     })
-    expect(r).toMatchObject({ invoiceRef: "TFE-1290", amount: 28500, plotId: null })
+    expect(r).toMatchObject({ invoiceRef: "TFE-1290", amount: 28500, paymentMethod: null })
+    expect(r.allocations[0].plotId).toBeNull()
   })
 
   it("una cosecha exige parcela y peso positivo", () => {

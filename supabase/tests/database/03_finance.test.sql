@@ -206,8 +206,8 @@ select is(
   (select count(*)::int from public.sales where organization_id = '22000000-0000-4000-a000-00000000000a'),
   0, 'El agrónomo no ve ventas');
 select throws_ok(
-  $$insert into public.project_expenses (organization_id, project_id, expense_date, category, description, amount)
-    values ('22000000-0000-4000-a000-00000000000a', '62000000-0000-4000-a000-0000000000a1', public.mx_today(), 'fletes', 'Flete', 100)$$,
+  $$select public.register_expense(gen_random_uuid(), '22000000-0000-4000-a000-00000000000a', public.mx_today(), 'fletes',
+      'transporte', 'Flete', 100, 'directo', '[{"project_id":"62000000-0000-4000-a000-0000000000a1"}]')$$,
   '42501', null, 'El agrónomo no captura gastos directos');
 
 -- -----------------------------------------------------------------------------
@@ -215,16 +215,22 @@ select throws_ok(
 -- -----------------------------------------------------------------------------
 select set_config('request.jwt.claims', '{"sub":"12000000-0000-4000-a000-00000000000f","role":"authenticated"}', true);
 
+-- Los proveedores los da de alta el almacén; aquí se insertan como dueño de la BD.
+reset role;
+insert into public.suppliers (id, organization_id, name)
+values ('9b000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a', 'Ejido San José');
+set local role authenticated;
+
 select lives_ok(
-  $$insert into public.project_expenses (organization_id, project_id, expense_date, category, description, supplier, invoice_ref, amount)
-    values ('22000000-0000-4000-a000-00000000000a', '62000000-0000-4000-a000-0000000000a1', public.mx_today() - 10,
-            'renta_tierra', 'Renta de 35 ha', 'Ejido San José', 'R-001', 5000)$$,
+  $$select public.register_expense('9c000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a',
+      public.mx_today() - 10, 'renta_tierra', 'otros', 'Renta de 35 ha', 5000, 'directo',
+      '[{"project_id":"62000000-0000-4000-a000-0000000000a1"}]', '9b000000-0000-4000-a000-0000000000a1', 'R-001')$$,
   'Gasto directo con factura');
 select throws_ok(
-  $$insert into public.project_expenses (organization_id, project_id, expense_date, category, description, supplier, invoice_ref, amount)
-    values ('22000000-0000-4000-a000-00000000000a', '62000000-0000-4000-a000-0000000000a1', public.mx_today(),
-            'renta_tierra', 'Renta (otra vez)', 'ejido san josé', 'r-001', 5000)$$,
-  '23505', null, 'La misma factura del mismo proveedor no se captura dos veces en el proyecto');
+  $$select public.register_expense(gen_random_uuid(), '22000000-0000-4000-a000-00000000000a', public.mx_today(),
+      'renta_tierra', 'otros', 'Renta (otra vez)', 5000, 'directo',
+      '[{"project_id":"62000000-0000-4000-a000-0000000000a1"}]', '9b000000-0000-4000-a000-0000000000a1', 'r-001')$$,
+  '23505', null, 'La misma factura del mismo proveedor no se captura dos veces');
 
 insert into public.customers (id, organization_id, name, credit_days)
 values ('96000000-0000-4000-a000-0000000000a1', '22000000-0000-4000-a000-00000000000a', 'Exportadora del Norte', 15);

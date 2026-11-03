@@ -77,6 +77,9 @@
   --chart-3: oklch(0.74 0.13 85);
   --chart-4: oklch(0.56 0.08 60);
   --chart-5: oklch(0.6 0.09 210);
+  /* Comparaciones de dos series (presupuesto/real, ventas/cobranza): validadas para daltonismo. */
+  --series-a: oklch(0.47 0.11 152);
+  --series-b: oklch(0.58 0.13 250);
   --radius: 0.625rem;
   --sidebar: oklch(0.265 0.055 156);
   --sidebar-foreground: oklch(0.93 0.015 148);
@@ -114,6 +117,8 @@
   --chart-3: oklch(0.78 0.13 85);
   --chart-4: oklch(0.65 0.09 60);
   --chart-5: oklch(0.68 0.09 210);
+  --series-a: oklch(0.64 0.14 150);
+  --series-b: oklch(0.56 0.13 255);
   --sidebar: oklch(0.2 0.03 155);
   --sidebar-foreground: oklch(0.95 0.01 145);
   --sidebar-primary: oklch(0.72 0.16 140);
@@ -151,5 +156,35 @@
   }
   input[type="date"]::-webkit-calendar-picker-indicator {
     @apply cursor-pointer opacity-60 hover:opacity-100 dark:invert;
+  }
+}
+/*
+ * Impresión / PDF de reportes: solo el contenido de la página, sin menú,
+ * barra superior ni controles. Las columnas secundarias se muestran.
+ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  [data-slot="sidebar"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-inset"] > header,
+  [data-print="hide"] {
+    display: none !important;
+  }
+  [data-slot="sidebar-inset"] > div {
+    max-width: none;
+    padding: 0;
+  }
+  [data-print="report"] th.hidden,
+  [data-print="report"] td.hidden {
+    display: table-cell !important;
+  }
+  [data-print="report"] [data-slot="table"] {
+    font-size: 10px;
+  }
+  body {
+    background: white;
   }
 }

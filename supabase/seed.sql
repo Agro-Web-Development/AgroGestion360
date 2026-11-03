@@ -319,17 +319,50 @@ begin
     (v_org, p_broc, null, e_4, d - 25, 'Acarreo de cosecha', 1),
     (v_org, p_broc, null, e_4, d - 15, 'Acarreo de cosecha', 1);
 
-  -- Gastos directos (sin insumos, maquinaria ni mano de obra)
-  insert into public.project_expenses (organization_id, project_id, plot_id, expense_date, category, description, supplier, invoice_ref, amount) values
-    (v_org, p_maiz, null,     d - 118, 'renta_tierra',            'Renta de 15 ha El Bajío ciclo P-V', 'Ejido San Roque', 'ESR-2026-04', 67500),
-    (v_org, p_maiz, null,     d - 90,  'agua_riego',              'Cuota de riego de auxilio',        'Módulo de riego Irapuato', 'MRI-7781', 18900),
-    (v_org, p_maiz, null,     d - 80,  'seguros',                 'Seguro agrícola catastrófico',     'Agroasemex', 'AGX-55120', 21600),
-    (v_org, p_jito, pl_norte, d - 45,  'energia',                 'Bombeo para fertirriego',          'CFE', 'CFE-0926', 14300),
-    (v_org, p_jito, null,     d - 35,  'servicios_profesionales', 'Asesoría técnica en nutrición',    'Agroconsultores del Centro', 'ACC-311', 12000),
-    (v_org, p_broc, pl_lote1, d - 80,  'energia',                 'Bombeo para riego por pivote',     'CFE', 'CFE-0914', 22800),
-    (v_org, p_broc, null,     d - 20,  'fletes',                  'Flete refrigerado a Celaya',       'Transportes Frío Express', 'TFE-1290', 28500),
-    (v_org, p_broc, null,     d - 12,  'fletes',                  'Flete refrigerado a Celaya',       'Transportes Frío Express', 'TFE-1342', 28500),
-    (v_org, p_broc, null,     d - 10,  'maquila',                 'Hidroenfriado y empaque',          'Empacadora del Bajío', 'EDB-4410', 41200);
+  -- Gastos directos (sin insumos, maquinaria ni mano de obra). Pasan por la RPC
+  -- real: encabezado con proveedor del catálogo y reparto al proyecto. Los que
+  -- llevan p_payment quedan pagados; los demás quedan por pagar.
+  insert into public.suppliers (id, organization_id, name, rfc, contact_name, phone) values
+    ('00000000-0000-4000-ab00-000000000011', v_org, 'Ejido San Roque',            null,           'Comisariado ejidal', null),
+    ('00000000-0000-4000-ab00-000000000012', v_org, 'Módulo de riego Irapuato',   null,           null,                 '462 555 0412'),
+    ('00000000-0000-4000-ab00-000000000013', v_org, 'Agroasemex',                 'AGR901105SP1', null,                 null),
+    ('00000000-0000-4000-ab00-000000000014', v_org, 'CFE',                        'CSS160330CP7', null,                 null),
+    ('00000000-0000-4000-ab00-000000000015', v_org, 'Agroconsultores del Centro', null,           'Ing. Marta Salas',   '461 555 0415'),
+    ('00000000-0000-4000-ab00-000000000016', v_org, 'Transportes Frío Express',   null,           'Daniel Cortés',      '461 555 0416'),
+    ('00000000-0000-4000-ab00-000000000017', v_org, 'Empacadora del Bajío',       null,           'Patricia Núñez',     '461 555 0417');
+
+  perform public.register_expense('00000000-0000-4000-b400-000000000001', v_org, d - 118, 'renta_tierra', 'otros',
+    'Renta de 15 ha El Bajío ciclo P-V', 67500, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_maiz)),
+    '00000000-0000-4000-ab00-000000000011', 'ESR-2026-04', 'transferencia',
+    p_payment => jsonb_build_object('id', '00000000-0000-4000-b500-000000000001', 'date', d - 118, 'reference', 'SPEI 1001'));
+  perform public.register_expense('00000000-0000-4000-b400-000000000002', v_org, d - 90, 'agua_riego', 'riego',
+    'Cuota de riego de auxilio', 18900, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_maiz)),
+    '00000000-0000-4000-ab00-000000000012', 'MRI-7781', 'deposito');
+  perform public.register_expense('00000000-0000-4000-b400-000000000003', v_org, d - 80, 'seguros', 'otros',
+    'Seguro agrícola catastrófico', 21600, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_maiz)),
+    '00000000-0000-4000-ab00-000000000013', 'AGX-55120', 'transferencia',
+    p_payment => jsonb_build_object('id', '00000000-0000-4000-b500-000000000003', 'date', d - 78, 'reference', 'SPEI 1044'));
+  perform public.register_expense('00000000-0000-4000-b400-000000000004', v_org, d - 45, 'energia', 'riego',
+    'Bombeo para fertirriego', 14300, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_jito, 'plot_id', pl_norte)),
+    '00000000-0000-4000-ab00-000000000014', 'CFE-0926', 'transferencia',
+    p_payment => jsonb_build_object('id', '00000000-0000-4000-b500-000000000004', 'date', d - 40, 'reference', 'Domiciliado'));
+  perform public.register_expense('00000000-0000-4000-b400-000000000005', v_org, d - 35, 'servicios_profesionales', 'otros',
+    'Asesoría técnica en nutrición', 12000, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_jito)),
+    '00000000-0000-4000-ab00-000000000015', 'ACC-311', 'transferencia');
+  perform public.register_expense('00000000-0000-4000-b400-000000000006', v_org, d - 80, 'energia', 'riego',
+    'Bombeo para riego por pivote', 22800, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_broc, 'plot_id', pl_lote1)),
+    '00000000-0000-4000-ab00-000000000014', 'CFE-0914', 'transferencia',
+    p_payment => jsonb_build_object('id', '00000000-0000-4000-b500-000000000006', 'date', d - 75, 'reference', 'Domiciliado'));
+  perform public.register_expense('00000000-0000-4000-b400-000000000007', v_org, d - 20, 'fletes', 'transporte',
+    'Flete refrigerado a Celaya', 28500, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_broc)),
+    '00000000-0000-4000-ab00-000000000016', 'TFE-1290', 'transferencia',
+    p_payment => jsonb_build_object('id', '00000000-0000-4000-b500-000000000007', 'date', d - 14, 'reference', 'SPEI 2210'));
+  perform public.register_expense('00000000-0000-4000-b400-000000000008', v_org, d - 12, 'fletes', 'transporte',
+    'Flete refrigerado a Celaya', 28500, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_broc)),
+    '00000000-0000-4000-ab00-000000000016', 'TFE-1342', 'transferencia');
+  perform public.register_expense('00000000-0000-4000-b400-000000000009', v_org, d - 10, 'maquila', 'cosecha',
+    'Hidroenfriado y empaque', 41200, 'directo', jsonb_build_array(jsonb_build_object('project_id', p_broc)),
+    '00000000-0000-4000-ab00-000000000017', 'EDB-4410', 'transferencia');
 
   -- Cortes de brócoli (proyecto en cosecha): cada corte por calidad es un lote
   -- LOT-AAAA-0001. Se capturan en cajas, toneladas o kg; la existencia es en kg.
@@ -466,6 +499,148 @@ begin
     p_activity_type => (select id from public.activity_types where organization_id = v_org and name = 'Deshierbe'));
   perform public.register_crew_labor('00000000-0000-4000-b300-000000000002', '00000000-0000-4000-b200-000000000001', p_broc,
     d - 3, 'Deshierbe manual entre camas', 1, p_plot => pl_lote1, p_employees => array[e_3, e_6]);
+
+  perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+-- =============================================================================
+-- Fase 5 · Presupuestos, gastos compartidos y flujo de efectivo de DEMOSTRACIÓN
+-- Presupuestos por categoría (brócoli con una revisión que conserva la
+-- versión original), dos gastos compartidos (por superficie y por porcentaje)
+-- y movimientos de efectivo: pagos de gastos, pagos a proveedores y otros
+-- ingresos/egresos (uno cancelado). Todo pasa por las RPC reales.
+-- =============================================================================
+do $$
+declare
+  v_org constant uuid := '00000000-0000-4000-a000-000000000001';
+  v_owner constant uuid := '00000000-0000-4000-b000-000000000001';
+  p_maiz constant uuid := '00000000-0000-4000-a400-000000000001';
+  p_jito constant uuid := '00000000-0000-4000-a400-000000000002';
+  p_broc constant uuid := '00000000-0000-4000-a400-000000000003';
+  p_sorgo constant uuid := '00000000-0000-4000-a400-000000000004';
+  b_broc_v1 constant uuid := '00000000-0000-4000-b600-000000000003';
+  d date := public.mx_today();
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+
+  -- Maíz (45 ha): semilla, fertilizante y combustible ya cerca o por encima de lo presupuestado.
+  perform public.save_budget('00000000-0000-4000-b600-000000000001', p_maiz, '[
+    {"category":"preparacion_terreno","concept":"Barbecho, rastra y surcado (servicio)","unit":"ha","quantity":45,"unit_cost":1800},
+    {"category":"semillas","concept":"Semilla maíz blanco H-377","unit":"saco","quantity":45,"unit_cost":3700},
+    {"category":"fertilizantes","concept":"DAP 18-46-00","unit":"kg","quantity":4500,"unit_cost":14.5},
+    {"category":"fertilizantes","concept":"Urea 46 %","unit":"kg","quantity":9000,"unit_cost":10},
+    {"category":"agroquimicos","concept":"Insecticida para gusano cogollero","unit":"l","quantity":45,"unit_cost":450},
+    {"category":"riego","concept":"Cuotas de riego de auxilio","unit":"riego","quantity":2,"unit_cost":18900},
+    {"category":"mano_obra","concept":"Jornales de deshierbe y aporque","unit":"jornal","quantity":80,"unit_cost":350},
+    {"category":"maquinaria","concept":"Tractor (barbecho, cultivo y aporque)","unit":"h","quantity":70,"unit_cost":650},
+    {"category":"maquinaria","concept":"Sembradora de precisión","unit":"h","quantity":14,"unit_cost":280},
+    {"category":"maquinaria","concept":"Aspersora","unit":"jornada","quantity":3,"unit_cost":1200},
+    {"category":"combustible","concept":"Diésel","unit":"l","quantity":3000,"unit_cost":24},
+    {"category":"mantenimiento","concept":"Mantenimiento de canales y bomba","unit":"servicio","quantity":1,"unit_cost":12000},
+    {"category":"cosecha","concept":"Cosecha mecánica","unit":"ha","quantity":45,"unit_cost":2500},
+    {"category":"transporte","concept":"Fletes a bodega","unit":"t","quantity":520,"unit_cost":180},
+    {"category":"otros","concept":"Renta de 15 ha El Bajío","unit":"ciclo","quantity":1,"unit_cost":67500},
+    {"category":"otros","concept":"Seguro agrícola","unit":"ha","quantity":45,"unit_cost":480},
+    {"category":"otros","concept":"Asesoría técnica (parte proporcional)","unit":"ciclo","quantity":1,"unit_cost":15000}
+  ]'::jsonb, d - 125, d + 45, p_notes => 'Presupuesto del ciclo P-V autorizado por la dirección.');
+
+  -- Jitomate (12 ha): ciclo largo, aún con poco avance.
+  perform public.save_budget('00000000-0000-4000-b600-000000000002', p_jito, '[
+    {"category":"preparacion_terreno","concept":"Camas, acolchado y cintilla","unit":"ha","quantity":12,"unit_cost":18000},
+    {"category":"semillas","concept":"Plántula saladette injertada","unit":"pieza","quantity":300000,"unit_cost":1.6},
+    {"category":"fertilizantes","concept":"Programa de fertirriego","unit":"ha","quantity":12,"unit_cost":21000},
+    {"category":"agroquimicos","concept":"Programa fitosanitario","unit":"ha","quantity":12,"unit_cost":15000},
+    {"category":"riego","concept":"Energía para bombeo","unit":"mes","quantity":5,"unit_cost":14000},
+    {"category":"mano_obra","concept":"Tutoreo, poda y cosecha","unit":"jornal","quantity":1800,"unit_cost":360},
+    {"category":"maquinaria","concept":"Tractor y aspersora","unit":"h","quantity":90,"unit_cost":650},
+    {"category":"combustible","concept":"Diésel","unit":"l","quantity":1600,"unit_cost":24.5},
+    {"category":"mantenimiento","concept":"Reposición de cintilla y válvulas","unit":"servicio","quantity":1,"unit_cost":45000},
+    {"category":"cosecha","concept":"Empaque y selección","unit":"caja","quantity":30000,"unit_cost":9},
+    {"category":"transporte","concept":"Fletes a central de abasto","unit":"viaje","quantity":40,"unit_cost":3500},
+    {"category":"otros","concept":"Asesoría técnica y certificación","unit":"ciclo","quantity":1,"unit_cost":60000}
+  ]'::jsonb, d - 60, d + 120);
+
+  -- Brócoli (20 ha): versión original y una revisión por el programa de exportación.
+  perform public.save_budget(b_broc_v1, p_broc, '[
+    {"category":"preparacion_terreno","concept":"Preparación de suelo y camas","unit":"ha","quantity":20,"unit_cost":1500},
+    {"category":"semillas","concept":"Plántula de brócoli Avenger","unit":"pieza","quantity":880000,"unit_cost":0.40},
+    {"category":"fertilizantes","concept":"Urea y DAP","unit":"ha","quantity":20,"unit_cost":3000},
+    {"category":"agroquimicos","concept":"Fungicidas e insecticidas","unit":"ha","quantity":20,"unit_cost":1250},
+    {"category":"riego","concept":"Energía para riego por pivote","unit":"mes","quantity":4,"unit_cost":10000},
+    {"category":"mano_obra","concept":"Trasplante, deshierbe y corte","unit":"ciclo","quantity":1,"unit_cost":110000},
+    {"category":"maquinaria","concept":"Tractor, aspersora y camión","unit":"h","quantity":40,"unit_cost":600},
+    {"category":"combustible","concept":"Diésel","unit":"l","quantity":1400,"unit_cost":24},
+    {"category":"cosecha","concept":"Hidroenfriado y empaque","unit":"caja","quantity":4000,"unit_cost":7.5},
+    {"category":"transporte","concept":"Fletes refrigerados","unit":"viaje","quantity":1,"unit_cost":30000},
+    {"category":"otros","concept":"Asesoría técnica (parte proporcional)","unit":"ciclo","quantity":1,"unit_cost":8000}
+  ]'::jsonb, d - 95, d + 15, p_notes => 'Presupuesto original del ciclo O-I.');
+  perform public.save_budget('00000000-0000-4000-b600-000000000004', p_broc, '[
+    {"category":"preparacion_terreno","concept":"Preparación de suelo y camas","unit":"ha","quantity":20,"unit_cost":1500},
+    {"category":"semillas","concept":"Plántula de brócoli Avenger","unit":"pieza","quantity":880000,"unit_cost":0.42},
+    {"category":"fertilizantes","concept":"Urea y DAP","unit":"ha","quantity":20,"unit_cost":3000},
+    {"category":"agroquimicos","concept":"Fungicidas e insecticidas","unit":"ha","quantity":20,"unit_cost":1250},
+    {"category":"riego","concept":"Energía para riego por pivote","unit":"mes","quantity":4,"unit_cost":10000},
+    {"category":"mano_obra","concept":"Trasplante, deshierbe y corte","unit":"ciclo","quantity":1,"unit_cost":130000},
+    {"category":"maquinaria","concept":"Tractor, aspersora y camión","unit":"h","quantity":40,"unit_cost":600},
+    {"category":"combustible","concept":"Diésel","unit":"l","quantity":1450,"unit_cost":24},
+    {"category":"mantenimiento","concept":"Mantenimiento del pivote","unit":"servicio","quantity":1,"unit_cost":8000},
+    {"category":"cosecha","concept":"Hidroenfriado y empaque","unit":"caja","quantity":5000,"unit_cost":9},
+    {"category":"transporte","concept":"Fletes refrigerados a Celaya","unit":"viaje","quantity":2,"unit_cost":30000},
+    {"category":"otros","concept":"Asesoría técnica (parte proporcional)","unit":"ciclo","quantity":1,"unit_cost":12000}
+  ]'::jsonb, d - 95, d + 15, p_base_version => 1,
+    p_reason => 'Programa de exportación: más fletes refrigerados, empaque y corte; ajuste de precio de plántula');
+
+  -- Sorgo (en planeación)
+  perform public.save_budget('00000000-0000-4000-b600-000000000005', p_sorgo, '[
+    {"category":"preparacion_terreno","concept":"Barbecho y rastra","unit":"ha","quantity":22,"unit_cost":1800},
+    {"category":"semillas","concept":"Semilla sorgo escobero","unit":"kg","quantity":330,"unit_cost":95},
+    {"category":"fertilizantes","concept":"Fertilización de fondo y cobertera","unit":"ha","quantity":22,"unit_cost":4200},
+    {"category":"mano_obra","concept":"Jornales","unit":"jornal","quantity":120,"unit_cost":350},
+    {"category":"maquinaria","concept":"Tractor y sembradora","unit":"h","quantity":60,"unit_cost":650},
+    {"category":"combustible","concept":"Diésel","unit":"l","quantity":1500,"unit_cost":24},
+    {"category":"cosecha","concept":"Corte y amarre de escoba","unit":"ha","quantity":22,"unit_cost":3500},
+    {"category":"otros","concept":"Seguro agrícola","unit":"ha","quantity":22,"unit_cost":480}
+  ]'::jsonb, d + 10, d + 150);
+
+  -- Gastos compartidos: asesoría por superficie (45 / 12 / 20 ha) y
+  -- mantenimiento del sistema de riego por porcentaje.
+  perform public.register_expense('00000000-0000-4000-b400-000000000101', v_org, d - 30, 'servicios_profesionales', 'otros',
+    'Asesoría técnica integral del ciclo', 36000, 'superficie',
+    jsonb_build_array(jsonb_build_object('project_id', p_maiz), jsonb_build_object('project_id', p_jito),
+                      jsonb_build_object('project_id', p_broc)),
+    '00000000-0000-4000-ab00-000000000015', 'ACC-330', 'transferencia',
+    p_notes => 'Contrato anual de asesoría; se reparte por hectáreas sembradas.');
+  perform public.register_expense('00000000-0000-4000-b400-000000000102', v_org, d - 22, 'mantenimiento', 'mantenimiento',
+    'Reparación de bomba y válvulas del sistema de riego', 18000, 'porcentaje',
+    jsonb_build_array(jsonb_build_object('project_id', p_maiz, 'value', 50), jsonb_build_object('project_id', p_jito, 'value', 20),
+                      jsonb_build_object('project_id', p_broc, 'value', 30)),
+    null, null, 'efectivo', p_notes => 'Pozo compartido por los tres proyectos.');
+
+  -- Pagos de gastos (parciales y totales)
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000101', v_org, 'pago_gasto', d - 25, 20000,
+    'transferencia', null, 'SPEI 3120', p_expense => '00000000-0000-4000-b400-000000000101');
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000102', v_org, 'pago_gasto', d - 85, 10000,
+    'deposito', 'Abono a cuota de riego', 'Ficha 55102', p_expense => '00000000-0000-4000-b400-000000000002');
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000103', v_org, 'pago_gasto', d - 30, 12000,
+    'transferencia', null, 'SPEI 3001', p_expense => '00000000-0000-4000-b400-000000000005');
+
+  -- Pagos a proveedores de almacén (las compras no son costo de proyecto, pero sí salida de dinero)
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000201', v_org, 'pago_proveedor', d - 48, 84800,
+    'transferencia', 'Pago factura urea FG-5871', 'SPEI 2650', p_supplier => '00000000-0000-4000-ab00-000000000002');
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000202', v_org, 'pago_proveedor', d - 44, 98400,
+    'transferencia', 'Pago factura diésel GC-3517', 'SPEI 2671', p_supplier => '00000000-0000-4000-ab00-000000000004');
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000203', v_org, 'pago_proveedor', d - 84, 378000,
+    'transferencia', 'Pago plántula de brócoli IVV-120', 'SPEI 1980', p_supplier => '00000000-0000-4000-ab00-000000000005');
+
+  -- Otros ingresos y egresos
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000301', v_org, 'otro_ingreso', d - 40, 45000,
+    'transferencia', 'Apoyo estatal a la productividad de maíz', 'SDAyR-2026-118', p_project => p_maiz);
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000302', v_org, 'otro_egreso', d - 5, 1250,
+    'transferencia', 'Comisiones bancarias del mes', 'Estado de cuenta');
+  perform public.register_cash_movement('00000000-0000-4000-b500-000000000303', v_org, 'otro_egreso', d - 5, 1250,
+    'transferencia', 'Comisiones bancarias del mes', 'Estado de cuenta');
+  perform public.cancel_cash_movement('00000000-0000-4000-b500-000000000303', 'Captura duplicada de las comisiones');
 
   perform set_config('request.jwt.claims', '', true);
 end;

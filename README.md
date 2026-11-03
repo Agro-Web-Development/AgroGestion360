@@ -4,10 +4,11 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fases 1–4 completas: control operativo (inventario con almacenes, lotes y transferencias; bitácoras;
-maquinaria; personal; reportes), módulos financieros (gastos y rentabilidad) y producción y comercialización (cortes y
-lotes de producción, inventario de producto con mermas, ventas con borrador y entregas, pagos y anticipos, cuentas por
-cobrar, trazabilidad por lote y dashboard comercial). Ver
+**Estado:** Fases 1–5 completas: control operativo (inventario con almacenes, lotes y transferencias; bitácoras;
+maquinaria; personal; reportes), producción y comercialización (cortes y lotes, inventario de producto con mermas, ventas
+con borrador y entregas, pagos y anticipos, cuentas por cobrar, trazabilidad y dashboard comercial) y administración
+financiera (presupuestos con versiones, gastos directos y compartidos, consolidación de costos, rentabilidad, flujo de
+efectivo, alertas de presupuesto, dashboard financiero y reportes en CSV, Excel y PDF). Ver
 [docs/arquitectura.md](docs/arquitectura.md) y [docs/decisiones.md](docs/decisiones.md).
 
 ## Stack
@@ -111,9 +112,7 @@ Los datos demo incluyen inventario con compras y consumos, 4 equipos, 4 empleado
    *Anular* crea la contrapartida exacta y solo se permite una vez.
 2. **Maquinaria y personal:** registra horas de un equipo o jornales; la tarifa queda congelada (cambiar la
    tarifa del equipo no altera lo registrado). Un empleado no puede acumular más de 1 jornal por día.
-3. **Gastos y rentabilidad:** gastos directos por categoría (sin insumos, maquinaria ni mano de obra, que
-   vienen de su módulo); la misma factura no se acepta dos veces en un proyecto. La pestaña de
-   rentabilidad muestra costo de producción, costo/ha, costo/kg, ventas y utilidad por proyecto.
+3. **Gastos y rentabilidad:** ampliados en la Fase 5 (ver abajo).
 4. **Cosechas, ventas y cobranza:** ampliadas en la Fase 4 (ver abajo).
 7. **Expediente del proyecto:** tarjeta *Costos y resultados* y *Detalle de costos* (cuyo total coincide
    siempre con el costo de producción). Al cerrar el proyecto sus costos e ingresos quedan congelados.
@@ -181,7 +180,36 @@ pagar; y un borrador.
    vs. cobrado, ventas por lote y parcela, pagos recibidos).
 10. **Permisos:** `agronomo@…` y `campo@…` registran cortes y mermas pero no ven ventas, folios ni importes;
     `consulta@…` ve todo sin poder capturar.
-11. **Pruebas:** `npm test` (101) y `npm run test:db` (315, incluye `05_commercial.test.sql`).
+11. **Pruebas:** `npm test` y `npm run test:db` (incluye `05_commercial.test.sql`).
+
+## Cómo probar la Fase 5 (administración financiera y rentabilidad)
+
+Los datos demo incluyen presupuestos por categoría de los 4 proyectos (brócoli con una revisión que conserva la versión
+original), 9 gastos directos (algunos pagados), 2 gastos compartidos (asesoría por superficie y reparación de bomba por
+porcentaje), pagos parciales de gastos, 3 pagos a proveedores de almacén, un apoyo estatal y un egreso cancelado.
+
+1. **Presupuestos:** el listado muestra versión vigente, costo real, % utilizado y alertas (maíz: semilla al 104 %, brócoli:
+   plántula al 100 %, transporte al 95 %). En brócoli abre *Versiones* → versión 1 (original) y compárala contra el gasto
+   real. *Nueva revisión* parte de la versión vigente y exige motivo; si otra persona guardó antes, se rechaza.
+2. **Alertas:** *Alertas* cambia los umbrales (70 / 90 / 100 % por omisión) y los estados se recalculan.
+3. **Gastos:** *Registrar gasto* con tipo, categoría presupuestal (solo las que no nacen en otro módulo), proveedor, factura,
+   método de pago, responsable y comprobante. Elige *Compartido por superficie* con dos o tres proyectos: la vista previa
+   muestra el reparto exacto (centavos incluidos). Marca *Ya está pagado* o déjalo por pagar y usa *Pagar* después. La
+   misma factura del mismo proveedor se rechaza; un gasto con pagos no se cancela.
+4. **Expediente del proyecto:** costo por las 7 clases, presupuesto con estado, costo por ha, kg y t, ventas, cobrado, por
+   cobrar, resultado estimado y producto en existencia a costo. El *Detalle de costos* indica origen, clase y categoría.
+5. **Rentabilidad:** por proyecto (presupuesto inicial, gastos reales, costo acumulado, producción, rendimiento, costo
+   unitario, ventas, cobrado, pendiente, margen) y por cultivo, con los criterios de cálculo.
+6. **Flujo de efectivo:** ingresos (cobros, anticipos y otros) contra egresos (pagos de gastos, a proveedores y otros); los
+   gastos sin pagar aparecen en *Por pagar*, no como egreso. *Registrar movimiento* captura pagos a proveedor y otros.
+   Filtra por proyecto: cobros y pagos compartidos se prorratean.
+7. **Dashboard financiero:** inversión, presupuesto, costos del periodo, % utilizado, ventas, cobranza, por cobrar y
+   resultado; gráficas de presupuesto contra real, costos por clase y proyecto, evolución, ventas contra cobranza,
+   rentabilidad, costo por ha y por kg; comparación de proyectos.
+8. **Reportes financieros:** 10 reportes con filtros de periodo, cultivo y proyecto; *CSV*, *Excel* (.xlsx con números y
+   fechas reales) y *PDF* (imprime solo el reporte abierto).
+9. **Permisos:** `agronomo@…` y `campo@…` no ven el módulo financiero; `consulta@…` lo ve sin botones de captura.
+10. **Pruebas:** `npm test` (126) y `npm run test:db` (391, incluye `06_financial.test.sql`).
 
 ## Seguridad
 

@@ -64,6 +64,18 @@
 | 60 | Comprobantes de pago en el bucket de evidencias (imagen o PDF), visibles solo para roles financieros. | Reutiliza Storage, RLS por ruta y el componente de evidencias de la Fase 3. |
 | 61 | Libro de producto en kg visible para todos los miembros; folios de venta e importes, solo para roles financieros. | El campo necesita saber qué hay disponible y qué se mermó; los importes siguen la decisión 33. |
 | 62 | Dashboard comercial: flujos por fecha del periodo y saldos al día; con filtro de cultivo o proyecto se prorratea cada venta por sus partidas. | Una venta con varios proyectos no se cuenta completa en cada uno. |
+| 63 | La Fase 5 **amplía** `project_expenses` (pasa a ser la asignación) con un encabezado `expenses`, en lugar de crear un módulo de gastos aparte. | Los gastos existentes siguen alimentando la misma vista de costos; la migración convirtió cada gasto en encabezado y agrupó como compartido por importe las facturas que ya se habían prorrateado a mano. |
+| 64 | Cada renglón de costo lleva **clase** (7, para consolidar), **categoría presupuestal** (12, para comparar) y documento de origen. | Una sola fuente de costos sirve al expediente, al presupuesto y a los reportes; la clasificación se deriva de datos fijos (clasificación del insumo, módulo, tipo de gasto o actividad) y no de un texto editable. |
+| 65 | Mano de obra y maquinaria propias van siempre a sus categorías aunque la labor sea preparación de terreno o cosecha; esas categorías reciben gastos y servicios contratados. | Criterio simple y verificable; evita repartir un jornal entre categorías por interpretación. |
+| 66 | **Resultado estimado = ventas confirmadas − costo de producción acumulado** (criterio conservador). El producto sin vender se muestra aparte, valuado a costo, y nunca se suma al resultado; lo cobrado tampoco es utilidad. | Durante el ciclo el resultado puede ser negativo aunque haya cosecha en existencia; es preferible a reconocer ingresos que aún no ocurren. |
+| 67 | Presupuestos **inmutables por versión**; la versión 1 es el presupuesto original. Una revisión exige motivo y que se haya editado desde la versión vigente. | Conservar el presupuesto original y evitar que dos personas sobrescriban la revisión del otro. |
+| 68 | Con presupuesto detallado, el importe del proyecto es el total de la versión vigente (lo sincroniza la RPC y un trigger impide capturarlo a mano). | Dashboard, listados y expediente muestran una sola cifra de presupuesto. |
+| 69 | Gastos compartidos con criterio guardado (superficie, partes iguales, porcentaje o importe); el residuo de centavos va al proyecto con mayor base (primero por id). El navegador calcula la misma vista previa con BigInt. | La suma del reparto es exacta y reproducible; el usuario ve antes de guardar lo que registrará la BD. |
+| 70 | Una factura de un proveedor se registra una sola vez en toda la organización (antes: por proyecto). | Con gastos compartidos ya no hace falta capturar la misma factura en varios proyectos; capturarla dos veces sería costo duplicado. |
+| 71 | **Registrado ≠ pagado:** un gasto es costo al registrarse y egreso solo con su pago (`cash_movements`); los cobros siguen en `payments`. El flujo de efectivo usa la fecha real del dinero (los anticipos cuentan al recibirse). | Requisito de distinguir operaciones registradas de pagos realizados; cuentas por pagar y por cobrar se muestran aparte. |
+| 72 | Umbrales de alerta por organización (70/90/100 por omisión), comparados con importes exactos (sin redondear el porcentaje). | Un 89.96 % no debe verse como crítico por redondeo; la BD y la interfaz usan la misma regla. |
+| 73 | Importes en la interfaz con aritmética entera (`lib/money.ts`: centavos y BigInt); los cálculos financieros persistentes viven en NUMERIC en la BD. | Evita errores de punto flotante en sumas, prorrateos y porcentajes mostrados o exportados. |
+| 74 | Excel generado sin dependencias (`lib/xlsx.ts`) y PDF mediante la impresión del navegador con estilos de impresión que muestran solo el reporte. | Evita dependencias pesadas para dos formatos de salida; el .xlsx conserva números y fechas reales. |
 
 ## Pendientes conocidos
 
@@ -77,6 +89,8 @@
 - Las listas de movimientos y registros muestran los 200–500 más recientes; falta paginación.
 - Las partidas de ventas anteriores a la Fase 4 no tienen lote propio si se repartieron entre varios lotes; su origen
   está en `production_movements` / `v_sale_lot_trace`. Esos borradores antiguos no existen (todas eran confirmadas).
+- Los formularios de la Fase 5 (gasto compartido, presupuesto, pagos) se verificaron con typecheck, pruebas de esquemas,
+  del reparto y de las RPC, y renderizado HTTP por rol; falta la prueba visual y E2E en navegador (Fase 6).
 - Los formularios de la Fase 4 se verificaron con typecheck, pruebas de esquemas y RPC y renderizado HTTP por rol; aún
   no hay pruebas E2E en navegador (Fase 6).
 - `npm audit` reporta vulnerabilidades moderadas en dependencias de desarrollo

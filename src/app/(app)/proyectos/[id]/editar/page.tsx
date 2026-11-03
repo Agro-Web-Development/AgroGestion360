@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 
 import { PageHeader } from "@/components/layout/page-header"
 import { Button } from "@/components/ui/button"
+import { getBudgetVersions } from "@/features/finance/queries"
 import { ProjectForm } from "@/features/projects/components/project-form"
 import { getActiveCrops, getActiveMembers, getProject } from "@/features/projects/queries"
 import { can } from "@/lib/auth/roles"
@@ -17,7 +18,12 @@ export default async function EditProjectPage({ params }: PageProps<"/proyectos/
   const { id } = await params
   const ctx = await getOrgContext()
   if (!can(ctx.role, "projects.write")) redirect(`/proyectos/${id}`)
-  const [project, activeCrops, activeMembers] = await Promise.all([getProject(id), getActiveCrops(), getActiveMembers()])
+  const [project, activeCrops, activeMembers, budgets] = await Promise.all([
+    getProject(id),
+    getActiveCrops(),
+    getActiveMembers(),
+    can(ctx.role, "finance.read") ? getBudgetVersions(id) : Promise.resolve([]),
+  ])
 
   // Conservar el cultivo actual aunque se haya desactivado después.
   const crops = activeCrops.some((c) => c.id === project.crop.id)
@@ -43,6 +49,7 @@ export default async function EditProjectPage({ params }: PageProps<"/proyectos/
         crops={crops}
         members={members}
         cancelHref={`/proyectos/${project.id}`}
+        budgetLocked={budgets.length > 0}
         defaultValues={{
           id: project.id,
           name: project.name,

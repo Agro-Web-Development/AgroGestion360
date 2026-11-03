@@ -29,6 +29,7 @@ export function FilterBar({
   to,
   selects = [],
   preserve = ["tab", "reporte"],
+  dates = true,
 }: {
   action: string
   from?: string
@@ -36,6 +37,8 @@ export function FilterBar({
   selects?: FilterSelect[]
   /** Parámetros de la URL actual que se conservan (p. ej. la pestaña activa). */
   preserve?: string[]
+  /** Muestra el rango de fechas (las vistas acumuladas no lo usan). */
+  dates?: boolean
 }) {
   const searchParams = useSearchParams()
   const hidden = Object.fromEntries(preserve.map((name) => [name, searchParams.get(name) ?? undefined]))
@@ -49,18 +52,22 @@ export function FilterBar({
   return (
     <Form action={action} replace scroll={false} className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:flex-wrap sm:items-end">
       {Object.entries(hidden).map(([name, value]) => value && <input key={name} type="hidden" name={name} value={value} />)}
-      <div className="grid gap-1.5">
-        <Label htmlFor="filter-from" className="text-xs text-muted-foreground">
-          Desde
-        </Label>
-        <Input id="filter-from" type="date" name="desde" defaultValue={from} className="sm:w-40" />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="filter-to" className="text-xs text-muted-foreground">
-          Hasta
-        </Label>
-        <Input id="filter-to" type="date" name="hasta" defaultValue={to} className="sm:w-40" />
-      </div>
+      {dates && (
+        <>
+          <div className="grid gap-1.5">
+            <Label htmlFor="filter-from" className="text-xs text-muted-foreground">
+              Desde
+            </Label>
+            <Input id="filter-from" type="date" name="desde" defaultValue={from} className="sm:w-40" />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="filter-to" className="text-xs text-muted-foreground">
+              Hasta
+            </Label>
+            <Input id="filter-to" type="date" name="hasta" defaultValue={to} className="sm:w-40" />
+          </div>
+        </>
+      )}
       {selects.map((s) => (
         <div key={s.name} className="grid gap-1.5">
           <Label htmlFor={`filter-${s.name}`} className="text-xs text-muted-foreground">

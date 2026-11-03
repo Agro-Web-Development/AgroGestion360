@@ -11,6 +11,7 @@ import { FormTextarea } from "@/components/forms/form-textarea"
 import { useActionForm } from "@/components/forms/use-action-form"
 import { FieldGroup } from "@/components/ui/field"
 import { IRRIGATION_LABELS, IRRIGATION_TYPES } from "@/features/farms/schemas"
+import { BUDGET_CATEGORIES, BUDGET_CATEGORY_LABELS } from "@/features/finance/schemas"
 import type { LotBalance, Product, Warehouse } from "@/features/inventory/queries"
 import { APPLICABLE_KINDS } from "@/features/inventory/schemas"
 import { ProjectPlotFields } from "@/features/projects/components/project-plot-fields"
@@ -525,7 +526,7 @@ export function ActivityDialog({
 
 export function ActivityTypeDialog({ trigger, activityType }: { trigger: React.ReactNode; activityType?: ActivityTypeInput }) {
   const [open, setOpen] = useState(false)
-  const defaults: ActivityTypeInput = activityType ?? { name: "", description: "" }
+  const defaults: ActivityTypeInput = activityType ?? { name: "", description: "", costCategory: "otros" }
   const { form, onSubmit, pending } = useActionForm<ActivityTypeInput>({
     schema: activityTypeSchema,
     defaultValues: defaults,
@@ -550,6 +551,13 @@ export function ActivityTypeDialog({ trigger, activityType }: { trigger: React.R
       <FieldGroup className="grid gap-5">
         <FormInput control={form.control} name="name" label="Nombre" placeholder="Ej. Tutoreo" />
         <FormTextarea control={form.control} name="description" label="Descripción" rows={2} />
+        <FormSelect
+          control={form.control}
+          name="costCategory"
+          label="Categoría presupuestal"
+          description="Para comparar contra el presupuesto el costo adicional (servicio contratado) de estas actividades."
+          options={BUDGET_CATEGORIES.map((c) => ({ value: c, label: BUDGET_CATEGORY_LABELS[c] }))}
+        />
       </FieldGroup>
     </FormDialog>
   )

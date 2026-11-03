@@ -22,11 +22,14 @@ export function ProjectForm({
   crops,
   members,
   cancelHref,
+  budgetLocked = false,
 }: {
   defaultValues: ProjectInput
   crops: CropOption[]
   members: { id: string; name: string }[]
   cancelHref: string
+  /** Con presupuesto detallado, el total lo define la versión vigente en Presupuestos. */
+  budgetLocked?: boolean
 }) {
   const { form, onSubmit, pending } = useActionForm<ProjectInput>({
     schema: projectSchema,
@@ -130,6 +133,12 @@ export function ProjectForm({
                 label="Presupuesto total (MXN)"
                 inputMode="decimal"
                 placeholder="0.00"
+                disabled={budgetLocked}
+                description={
+                  budgetLocked
+                    ? "Es el total de la versión vigente del presupuesto; se modifica con una revisión en Presupuestos."
+                    : "Importe global; el desglose por categoría se elabora en Presupuestos."
+                }
               />
             </FieldGroup>
           </CardContent>

@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { BUDGET_CATEGORIES } from "@/features/finance/schemas"
 import { IRRIGATION_TYPES } from "@/features/farms/schemas"
 import { todayISO } from "@/lib/format"
 import {
@@ -28,6 +29,7 @@ export const ATTACHMENT_ENTITIES = [
   "machinery_maintenance",
   "harvest",
   "payment",
+  "expense",
 ] as const
 export type AttachmentEntity = (typeof ATTACHMENT_ENTITIES)[number]
 
@@ -39,15 +41,19 @@ export const ATTACHMENT_PERMISSION: Record<AttachmentEntity, Permission> = {
   machinery_maintenance: "fieldlogs.write",
   harvest: "harvest.write",
   payment: "payments.write",
+  expense: "expenses.write",
 }
 
+/** Comprobantes (pagos y gastos): información financiera, también en PDF. */
+export const isReceiptEntity = (entity: AttachmentEntity) => entity === "payment" || entity === "expense"
+
 export const ATTACHMENT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"] as const
-/** Los comprobantes de pago también se aceptan en PDF. */
+/** Los comprobantes de pagos y gastos también se aceptan en PDF. */
 export const RECEIPT_TYPES = [...ATTACHMENT_TYPES, "application/pdf"] as const
 export type AttachmentMime = (typeof RECEIPT_TYPES)[number]
 
 export function attachmentTypes(entity: AttachmentEntity): readonly AttachmentMime[] {
-  return entity === "payment" ? RECEIPT_TYPES : ATTACHMENT_TYPES
+  return isReceiptEntity(entity) ? RECEIPT_TYPES : ATTACHMENT_TYPES
 }
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 export const MAX_ATTACHMENTS_PER_UPLOAD = 6
@@ -168,6 +174,8 @@ export const activityTypeSchema = z.object({
   id: z.uuid().optional(),
   name: requiredText(2, 80, "El nombre debe tener al menos 2 caracteres"),
   description: optionalText(300),
+  /** Categoría presupuestal del costo adicional (servicio contratado) de la actividad. */
+  costCategory: z.enum(BUDGET_CATEGORIES, { error: "Selecciona la categoría" }),
 })
 
 export const attachmentFileSchema = z.object({

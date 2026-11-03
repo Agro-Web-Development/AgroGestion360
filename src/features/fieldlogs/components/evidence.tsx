@@ -15,13 +15,14 @@ import { deleteAttachment, listAttachments, registerAttachments, type Attachment
 import {
   attachmentPath,
   attachmentTypes,
+  isReceiptEntity,
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENTS_PER_UPLOAD,
   type AttachmentEntity,
   type AttachmentMime,
 } from "../schemas"
 
-const isReceipt = (entity: AttachmentEntity) => entity === "payment"
+const isReceipt = isReceiptEntity
 
 function rejectedMessage(entity: AttachmentEntity) {
   return isReceipt(entity) ? "Solo imágenes o PDF de hasta 10 MB." : "Solo imágenes JPG, PNG, WEBP o HEIC de hasta 10 MB."
