@@ -535,6 +535,50 @@ isOneToOne: false
       referencedColumns: ["project_id","plot_id"]
     }
                   ]
+                },"field_observations": {
+                  Row: {
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"category": Database["public"]['Enums']["observation_category"],"created_at": string,"created_by": string | null,"description": string | null,"id": string,"latitude": number | null,"longitude": number | null,"observation_date": string,"observation_time": string | null,"organization_id": string,"plot_id": string | null,"project_id": string,"responsible_id": string | null,"severity": Database["public"]['Enums']["observation_severity"],"status": Database["public"]['Enums']["log_status"],"title": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"category": Database["public"]['Enums']["observation_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id": string,"latitude"?: number | null,"longitude"?: number | null,"observation_date": string,"observation_time"?: string | null,"organization_id": string,"plot_id"?: string | null,"project_id": string,"responsible_id"?: string | null,"severity"?: Database["public"]['Enums']["observation_severity"],"status"?: Database["public"]['Enums']["log_status"],"title": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"category"?: Database["public"]['Enums']["observation_category"],"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"latitude"?: number | null,"longitude"?: number | null,"observation_date"?: string,"observation_time"?: string | null,"organization_id"?: string,"plot_id"?: string | null,"project_id"?: string,"responsible_id"?: string | null,"severity"?: Database["public"]['Enums']["observation_severity"],"status"?: Database["public"]['Enums']["log_status"],"title"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "field_observations_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_observations_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "field_observations_organization_id_project_id_fkey"
+      columns: ["organization_id","project_id"]
+isOneToOne: false
+      referencedRelation: "v_project_costs"
+      referencedColumns: ["organization_id","project_id"]
+    },{
+      foreignKeyName: "field_observations_organization_id_responsible_id_fkey"
+      columns: ["organization_id","responsible_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "field_observations_project_id_plot_id_fkey"
+      columns: ["project_id","plot_id"]
+isOneToOne: false
+      referencedRelation: "project_plots"
+      referencedColumns: ["project_id","plot_id"]
+    }
+                  ]
                 },"finance_settings": {
                   Row: {
                     "created_at": string,"created_by": string | null,"critical_pct": number,"exhausted_pct": number,"id": string,"organization_id": string,"updated_at": string,"updated_by": string | null,"warning_pct": number
@@ -1067,6 +1111,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"offline_submissions": {
+                  Row: {
+                    "attempts": number,"captured_at": string,"entity_id": string | null,"id": string,"last_error": string | null,"organization_id": string,"payload": NonNullable<Json>,"payload_hash": string,"received_at": string,"record_type": Database["public"]['Enums']["offline_record_type"],"review_note": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"status": Database["public"]['Enums']["offline_submission_status"],"synced_at": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"captured_at": string,"entity_id"?: string | null,"id": string,"last_error"?: string | null,"organization_id": string,"payload": NonNullable<Json>,"payload_hash": string,"received_at"?: string,"record_type": Database["public"]['Enums']["offline_record_type"],"review_note"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status": Database["public"]['Enums']["offline_submission_status"],"synced_at"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "attempts"?: number,"captured_at"?: string,"entity_id"?: string | null,"id"?: string,"last_error"?: string | null,"organization_id"?: string,"payload"?: NonNullable<Json>,"payload_hash"?: string,"received_at"?: string,"record_type"?: Database["public"]['Enums']["offline_record_type"],"review_note"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: Database["public"]['Enums']["offline_submission_status"],"synced_at"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "offline_submissions_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"organization_counters": {
                   Row: {
                     "organization_id": string,"scope": string,"value": number,"year": number
@@ -1089,17 +1153,23 @@ isOneToOne: false
                   ]
                 },"organizations": {
                   Row: {
-                    "address": string | null,"created_at": string,"created_by": string | null,"currency": string,"email": string | null,"id": string,"is_demo": boolean,"legal_name": string | null,"name": string,"phone": string | null,"plan": string,"rfc": string | null,"timezone": string,"updated_at": string,"updated_by": string | null
+                    "address": string | null,"created_at": string,"created_by": string | null,"currency": string,"email": string | null,"id": string,"is_demo": boolean,"legal_name": string | null,"name": string,"phone": string | null,"plan": string,"plan_code": string,"plan_started_at": string,"rfc": string | null,"timezone": string,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"email"?: string | null,"id"?: string,"is_demo"?: boolean,"legal_name"?: string | null,"name": string,"phone"?: string | null,"plan"?: string,"rfc"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "address"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"email"?: string | null,"id"?: string,"is_demo"?: boolean,"legal_name"?: string | null,"name": string,"phone"?: string | null,"plan"?: string,"plan_code"?: string,"plan_started_at"?: string,"rfc"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "address"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"email"?: string | null,"id"?: string,"is_demo"?: boolean,"legal_name"?: string | null,"name"?: string,"phone"?: string | null,"plan"?: string,"rfc"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
+                    "address"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"email"?: string | null,"id"?: string,"is_demo"?: boolean,"legal_name"?: string | null,"name"?: string,"phone"?: string | null,"plan"?: string,"plan_code"?: string,"plan_started_at"?: string,"rfc"?: string | null,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "organizations_plan_code_fkey"
+      columns: ["plan_code"]
+isOneToOne: false
+      referencedRelation: "plans"
+      referencedColumns: ["code"]
+    }
                   ]
                 },"payments": {
                   Row: {
@@ -1126,6 +1196,20 @@ isOneToOne: false
       referencedRelation: "v_sale_balances"
       referencedColumns: ["organization_id","id"]
     }
+                  ]
+                },"plans": {
+                  Row: {
+                    "code": string,"created_at": string,"description": string | null,"features": (string)[],"is_active": boolean,"max_projects": number | null,"max_storage_mb": number | null,"max_users": number | null,"name": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"description"?: string | null,"features"?: (string)[],"is_active"?: boolean,"max_projects"?: number | null,"max_storage_mb"?: number | null,"max_users"?: number | null,"name": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"description"?: string | null,"features"?: (string)[],"is_active"?: boolean,"max_projects"?: number | null,"max_storage_mb"?: number | null,"max_users"?: number | null,"name"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    
                   ]
                 },"plots": {
                   Row: {
@@ -1823,6 +1907,9 @@ isOneToOne: false
 "dashboard_summary":
 { Args: { "p_org": string }; Returns: Json
                            },
+"discard_offline_submission":
+{ Args: { "p_id": string,"p_note": string }; Returns: undefined
+                           },
 "expense_cost_class":
 { Args: { "p_category": Database["public"]['Enums']["expense_category"] }; Returns: string
                            },
@@ -1886,6 +1973,9 @@ isOneToOne: false
                            },
 "next_folio":
 { Args: { "p_org": string,"p_prefix": string,"p_scope": string }; Returns: string
+                           },
+"organization_usage":
+{ Args: { "p_org": string }; Returns: Json
                            },
 "parse_budget_lines":
 { Args: { "p_lines": Json }; Returns: {
@@ -1960,6 +2050,9 @@ isOneToOne: false
 "save_budget":
 { Args: { "p_area_ha"?: number,"p_base_version"?: number,"p_id": string,"p_lines": Json,"p_notes"?: string,"p_period_end": string,"p_period_start": string,"p_project": string,"p_reason"?: string }; Returns: string
                            },
+"save_offline_submission":
+{ Args: { "p_captured_at": string,"p_entity"?: string,"p_error"?: string,"p_hash": string,"p_id": string,"p_org": string,"p_payload": Json,"p_status": Database["public"]['Enums']["offline_submission_status"],"p_type": Database["public"]['Enums']["offline_record_type"] }; Returns: string
+                           },
 "save_sale":
 { Args: { "p_confirm"?: boolean,"p_customer": string,"p_delivery_date"?: string,"p_due_date"?: string,"p_id": string,"p_items": Json,"p_notes"?: string,"p_sale_date": string }; Returns: string
                            },
@@ -1980,7 +2073,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "allocation_method": "directo"|"superficie"|"partes_iguales"|"porcentaje"|"importe","app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","attendance_status": "presente"|"falta"|"permiso"|"incapacidad"|"descanso","budget_category": "preparacion_terreno"|"semillas"|"fertilizantes"|"agroquimicos"|"riego"|"mano_obra"|"maquinaria"|"combustible"|"mantenimiento"|"cosecha"|"transporte"|"otros","cash_kind": "pago_gasto"|"pago_proveedor"|"otro_ingreso"|"otro_egreso","customer_type": "mayorista"|"minorista"|"empacadora"|"exportadora"|"industria"|"intermediario"|"otro","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"mantenimiento"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_kind": "semilla"|"fertilizante"|"agroquimico"|"biologico"|"combustible"|"herramienta"|"material"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida"|"transferencia","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","log_status": "registrado"|"cancelado","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","machine_rate_basis": "hora"|"jornada","machine_status": "operativa"|"en_mantenimiento"|"fuera_servicio"|"baja","maintenance_kind": "preventivo"|"correctivo","membership_status": "activo"|"inactivo","payment_kind": "pago"|"anticipo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","produce_unit": "kg"|"t"|"caja"|"saco"|"arpilla"|"reja","production_movement_type": "venta"|"cancelacion_venta"|"merma"|"perdida"|"ajuste_entrada"|"ajuste_salida"|"reverso_ajuste","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "borrador"|"confirmada"|"entregada"|"parcialmente_pagada"|"pagada"|"cancelada","worker_type": "planta"|"eventual"|"temporal"|"destajista"
+            "allocation_method": "directo"|"superficie"|"partes_iguales"|"porcentaje"|"importe","app_role": "propietario"|"administrador"|"agronomo"|"supervisor"|"almacen"|"finanzas"|"consulta","attendance_status": "presente"|"falta"|"permiso"|"incapacidad"|"descanso","budget_category": "preparacion_terreno"|"semillas"|"fertilizantes"|"agroquimicos"|"riego"|"mano_obra"|"maquinaria"|"combustible"|"mantenimiento"|"cosecha"|"transporte"|"otros","cash_kind": "pago_gasto"|"pago_proveedor"|"otro_ingreso"|"otro_egreso","customer_type": "mayorista"|"minorista"|"empacadora"|"exportadora"|"industria"|"intermediario"|"otro","expense_category": "renta_tierra"|"agua_riego"|"energia"|"fletes"|"servicios_profesionales"|"maquila"|"seguros"|"financiamiento"|"derechos_impuestos"|"mantenimiento"|"otros","harvest_quality": "primera"|"segunda"|"tercera"|"unica","input_kind": "semilla"|"fertilizante"|"agroquimico"|"biologico"|"combustible"|"herramienta"|"material"|"otro","inventory_movement_type": "entrada"|"consumo"|"devolucion"|"ajuste_entrada"|"ajuste_salida"|"transferencia","invitation_status": "pendiente"|"aceptada"|"cancelada","irrigation_type": "temporal"|"goteo"|"aspersion"|"microaspersion"|"gravedad"|"pivote"|"otro","labor_pay_type": "jornal"|"destajo","log_status": "registrado"|"cancelado","machine_kind": "tractor"|"cosechadora"|"aspersora"|"implemento"|"vehiculo"|"bomba"|"otro","machine_rate_basis": "hora"|"jornada","machine_status": "operativa"|"en_mantenimiento"|"fuera_servicio"|"baja","maintenance_kind": "preventivo"|"correctivo","membership_status": "activo"|"inactivo","observation_category": "plaga"|"enfermedad"|"maleza"|"clima"|"riego"|"nutricion"|"fenologia"|"otro","observation_severity": "baja"|"media"|"alta","offline_record_type": "riego"|"actividad"|"aplicacion"|"observacion"|"cosecha","offline_submission_status": "sincronizado"|"requiere_revision"|"descartado","payment_kind": "pago"|"anticipo","payment_method": "efectivo"|"transferencia"|"cheque"|"deposito"|"otro","payment_status": "aplicado"|"cancelado","produce_unit": "kg"|"t"|"caja"|"saco"|"arpilla"|"reja","production_movement_type": "venta"|"cancelacion_venta"|"merma"|"perdida"|"ajuste_entrada"|"ajuste_salida"|"reverso_ajuste","project_status": "planeacion"|"preparacion"|"siembra"|"desarrollo"|"cosecha"|"comercializacion"|"cerrado"|"cancelado","sale_status": "borrador"|"confirmada"|"entregada"|"parcialmente_pagada"|"pagada"|"cancelada","worker_type": "planta"|"eventual"|"temporal"|"destajista"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -2100,7 +2193,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "allocation_method": ["directo", "superficie", "partes_iguales", "porcentaje", "importe"],"app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"attendance_status": ["presente", "falta", "permiso", "incapacidad", "descanso"],"budget_category": ["preparacion_terreno", "semillas", "fertilizantes", "agroquimicos", "riego", "mano_obra", "maquinaria", "combustible", "mantenimiento", "cosecha", "transporte", "otros"],"cash_kind": ["pago_gasto", "pago_proveedor", "otro_ingreso", "otro_egreso"],"customer_type": ["mayorista", "minorista", "empacadora", "exportadora", "industria", "intermediario", "otro"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "mantenimiento", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_kind": ["semilla", "fertilizante", "agroquimico", "biologico", "combustible", "herramienta", "material", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida", "transferencia"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"log_status": ["registrado", "cancelado"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"machine_rate_basis": ["hora", "jornada"],"machine_status": ["operativa", "en_mantenimiento", "fuera_servicio", "baja"],"maintenance_kind": ["preventivo", "correctivo"],"membership_status": ["activo", "inactivo"],"payment_kind": ["pago", "anticipo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"produce_unit": ["kg", "t", "caja", "saco", "arpilla", "reja"],"production_movement_type": ["venta", "cancelacion_venta", "merma", "perdida", "ajuste_entrada", "ajuste_salida", "reverso_ajuste"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["borrador", "confirmada", "entregada", "parcialmente_pagada", "pagada", "cancelada"],"worker_type": ["planta", "eventual", "temporal", "destajista"]
+            "allocation_method": ["directo", "superficie", "partes_iguales", "porcentaje", "importe"],"app_role": ["propietario", "administrador", "agronomo", "supervisor", "almacen", "finanzas", "consulta"],"attendance_status": ["presente", "falta", "permiso", "incapacidad", "descanso"],"budget_category": ["preparacion_terreno", "semillas", "fertilizantes", "agroquimicos", "riego", "mano_obra", "maquinaria", "combustible", "mantenimiento", "cosecha", "transporte", "otros"],"cash_kind": ["pago_gasto", "pago_proveedor", "otro_ingreso", "otro_egreso"],"customer_type": ["mayorista", "minorista", "empacadora", "exportadora", "industria", "intermediario", "otro"],"expense_category": ["renta_tierra", "agua_riego", "energia", "fletes", "servicios_profesionales", "maquila", "seguros", "financiamiento", "derechos_impuestos", "mantenimiento", "otros"],"harvest_quality": ["primera", "segunda", "tercera", "unica"],"input_kind": ["semilla", "fertilizante", "agroquimico", "biologico", "combustible", "herramienta", "material", "otro"],"inventory_movement_type": ["entrada", "consumo", "devolucion", "ajuste_entrada", "ajuste_salida", "transferencia"],"invitation_status": ["pendiente", "aceptada", "cancelada"],"irrigation_type": ["temporal", "goteo", "aspersion", "microaspersion", "gravedad", "pivote", "otro"],"labor_pay_type": ["jornal", "destajo"],"log_status": ["registrado", "cancelado"],"machine_kind": ["tractor", "cosechadora", "aspersora", "implemento", "vehiculo", "bomba", "otro"],"machine_rate_basis": ["hora", "jornada"],"machine_status": ["operativa", "en_mantenimiento", "fuera_servicio", "baja"],"maintenance_kind": ["preventivo", "correctivo"],"membership_status": ["activo", "inactivo"],"observation_category": ["plaga", "enfermedad", "maleza", "clima", "riego", "nutricion", "fenologia", "otro"],"observation_severity": ["baja", "media", "alta"],"offline_record_type": ["riego", "actividad", "aplicacion", "observacion", "cosecha"],"offline_submission_status": ["sincronizado", "requiere_revision", "descartado"],"payment_kind": ["pago", "anticipo"],"payment_method": ["efectivo", "transferencia", "cheque", "deposito", "otro"],"payment_status": ["aplicado", "cancelado"],"produce_unit": ["kg", "t", "caja", "saco", "arpilla", "reja"],"production_movement_type": ["venta", "cancelacion_venta", "merma", "perdida", "ajuste_entrada", "ajuste_salida", "reverso_ajuste"],"project_status": ["planeacion", "preparacion", "siembra", "desarrollo", "cosecha", "comercializacion", "cerrado", "cancelado"],"sale_status": ["borrador", "confirmada", "entregada", "parcialmente_pagada", "pagada", "cancelada"],"worker_type": ["planta", "eventual", "temporal", "destajista"]
           }
         }
 } as const

@@ -2,6 +2,7 @@ import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
 import { fromCents, toCents } from "@/lib/money"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import {
   DEFAULT_THRESHOLDS,
@@ -126,8 +127,8 @@ export async function getCostEntries(filters: CostEntryFilters, limit = 20000) {
   if (filters.from) query = query.gte("entry_date", filters.from)
   if (filters.to) query = query.lte("entry_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query.limit(limit)
-  if (error) throw new Error("No fue posible cargar los costos.")
+  const { data, error } = await fetchRows(query.order("entry_date").order("source").order("source_id"), limit)
+  if (error || !data) throw new Error("No fue posible cargar los costos.")
   return data.map((e) => ({
     projectId: e.project_id!,
     date: e.entry_date!,
@@ -162,8 +163,8 @@ export async function getExpenses(filters: ExpenseFilters = {}, limit = 500) {
   if (filters.from) query = query.gte("expense_date", filters.from)
   if (filters.to) query = query.lte("expense_date", filters.to)
   if (filters.projectId) query = query.eq("project_expenses.project_id", filters.projectId)
-  const { data, error } = await query.limit(limit)
-  if (error) throw new Error("No fue posible cargar los gastos.")
+  const { data, error } = await fetchRows(query.order("id"), limit)
+  if (error || !data) throw new Error("No fue posible cargar los gastos.")
   return data.map((e) => {
     const amount = n(e.amount)
     const paid = n(e.paid_amount)
@@ -297,8 +298,8 @@ export async function getCurrentBudgetLines(scope: CostScope = {}) {
     .eq("budget.is_current", true)
   if (scope.projectId) query = query.eq("budget.project_id", scope.projectId)
   if (scope.cropId) query = query.eq("budget.project.crop_id", scope.cropId)
-  const { data, error } = await query.limit(5000)
-  if (error) throw new Error("No fue posible cargar los presupuestos.")
+  const { data, error } = await fetchRows(query.order("budget_id").order("line_no"), 5000)
+  if (error || !data) throw new Error("No fue posible cargar los presupuestos.")
   return data
     .map((l) => ({
       project: l.budget.project.code,
@@ -350,8 +351,8 @@ export async function getCashMovements(filters: CashFlowFilters) {
     .order("movement_date", { ascending: false })
     .order("created_at", { ascending: false })
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query.limit(1000)
-  if (error) throw new Error("No fue posible cargar los movimientos de efectivo.")
+  const { data, error } = await fetchRows(query.order("id"), 5000)
+  if (error || !data) throw new Error("No fue posible cargar los movimientos de efectivo.")
   return data.map((m) => ({ ...m, amount: n(m.amount) }))
 }
 

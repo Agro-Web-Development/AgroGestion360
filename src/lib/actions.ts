@@ -51,3 +51,16 @@ export function dbErrorMessage(error: Pick<PostgrestError, "code" | "message">):
 export function isDuplicateId(error: Pick<PostgrestError, "code" | "message">): boolean {
   return error.code === "23505" && error.message.includes('_pkey"')
 }
+
+/**
+ * Clases de error de PostgreSQL que expresan una regla de negocio o de acceso
+ * (datos inválidos, existencias insuficientes, proyecto cerrado, sin permiso…):
+ * reintentar sin cambiar nada daría el mismo resultado. Cualquier otro error
+ * (red, tiempo de espera, interbloqueo, servicio no disponible) es transitorio.
+ */
+export function isRetryableDbError(error: Pick<PostgrestError, "code">): boolean {
+  const code = error.code ?? ""
+  if (code === "42501" || code === "P0001" || code === "P0002") return false
+  if (code.startsWith("22") || code.startsWith("23")) return false
+  return true
+}

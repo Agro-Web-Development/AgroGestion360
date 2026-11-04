@@ -12,9 +12,18 @@ export const metadata: Metadata = {
   description:
     "Plataforma para la administración integral de proyectos agrícolas: producción, inventarios, ventas y cobranza.",
   applicationName: "AgroGestión 360",
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }, { url: "/icons/icon-192.png", sizes: "192x192" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  appleWebApp: { capable: true, title: "AgroGestión", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 }
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#1d5b3a" },
     { media: "(prefers-color-scheme: dark)", color: "#0f1f17" },

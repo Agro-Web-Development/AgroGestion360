@@ -20,8 +20,16 @@ import type { ActionResult } from "@/lib/actions"
 import { formatDate, formatMoney, formatNumber } from "@/lib/format"
 import { toInput, NONE } from "@/lib/validation"
 import { cancelApplication, cancelFieldRecord, deleteActivityType, setActivityTypeActive } from "../actions"
-import type { ActivityType, Application, FieldActivity, IrrigationLog } from "../queries"
-import { appliedRate, formatDuration, type AttachmentEntity } from "../schemas"
+import type { ActivityType, Application, FieldActivity, FieldObservation, IrrigationLog } from "../queries"
+import {
+  appliedRate,
+  formatDuration,
+  OBSERVATION_CATEGORY_LABELS,
+  SEVERITY_LABELS,
+  type AttachmentEntity,
+  type ObservationCategory,
+  type ObservationSeverity,
+} from "../schemas"
 import { EvidenceDialog } from "./evidence"
 import { ActivityDialog, ActivityTypeDialog, ApplicationEditDialog, IrrigationDialog } from "./log-dialogs"
 
@@ -484,6 +492,99 @@ export function ActivitiesTable({
 }
 
 // -----------------------------------------------------------------------------
+const SEVERITY_STYLES: Record<ObservationSeverity, string> = {
+  baja: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  media: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  alta: "border-destructive/30 bg-destructive/10 text-destructive",
+}
+
+/** Observaciones de campo (se capturan en /campo, con o sin conexión). */
+export function ObservationsTable({ observations, ...shared }: Shared & { observations: FieldObservation[] }) {
+  const { filtered, controls } = useLogFilter(observations, (r) => [
+    r.title,
+    r.description,
+    OBSERVATION_CATEGORY_LABELS[r.category as ObservationCategory],
+    r.project.code,
+    r.responsible?.full_name,
+  ])
+
+  return (
+    <div className="space-y-3">
+      {controls}
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Observación</TableHead>
+              <TableHead className="hidden md:table-cell">Proyecto / parcela</TableHead>
+              <TableHead>Severidad</TableHead>
+              <TableHead className="w-24">
+                <span className="sr-only">Acciones</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 && <Empty cols={5} text="Sin observaciones en el periodo." />}
+            {filtered.map((r) => (
+              <TableRow key={r.id} className={r.status === "cancelado" ? "opacity-60" : undefined}>
+                <TableCell className="whitespace-nowrap">
+                  {formatDate(r.observation_date)}
+                  {r.observation_time && <p className="text-xs text-muted-foreground">{r.observation_time.slice(0, 5)}</p>}
+                  <CancelledBadge row={r} />
+                </TableCell>
+                <TableCell className="max-w-80 whitespace-normal">
+                  <p className="font-medium">{r.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {OBSERVATION_CATEGORY_LABELS[r.category as ObservationCategory]}
+                    {r.responsible && ` · ${r.responsible.full_name}`}
+                    {r.latitude !== null && r.longitude !== null && (
+                      <>
+                        {" · "}
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${r.latitude}&mlon=${r.longitude}#map=17/${r.latitude}/${r.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline"
+                        >
+                          ubicación
+                        </a>
+                      </>
+                    )}
+                  </p>
+                  {r.description && <p className="line-clamp-2 text-xs text-muted-foreground">{r.description}</p>}
+                  <p className="text-xs text-muted-foreground md:hidden">{r.project.code}</p>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <ProjectCell project={r.project} plot={r.assignment?.plot.name} />
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={SEVERITY_STYLES[r.severity as ObservationSeverity]}>
+                    {SEVERITY_LABELS[r.severity as ObservationSeverity]}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <RowActions
+                    row={r}
+                    canWrite={shared.canWrite}
+                    organizationId={shared.organizationId}
+                    entity="field_observation"
+                    title={`${r.title} · ${r.project.code} · ${formatDate(r.observation_date)}`}
+                    cancel={{
+                      description: "La observación se conserva como cancelada con el motivo.",
+                      action: (reason) => cancelFieldRecord("observacion", r.id, reason),
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}
+
 export function ActivityTypesTable({
   types,
   canWrite,

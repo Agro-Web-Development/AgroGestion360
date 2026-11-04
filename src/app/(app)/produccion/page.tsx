@@ -29,6 +29,9 @@ const TABS = ["indicadores", "cortes", "inventario", "movimientos"] as const
 
 export default async function ProductionPage({ searchParams }: PageProps<"/produccion">) {
   const sp = await searchParams
+  // La fecha se lee después de la sesión (cookies): con Cache Components, leer
+  // el reloj antes de un dato de la solicitud interrumpe el prerenderizado.
+  const ctx = await getOrgContext()
   const today = todayISO()
   const filters = {
     from: dateParam(sp.desde) ?? `${today.slice(0, 4)}-01-01`,
@@ -37,7 +40,6 @@ export default async function ProductionPage({ searchParams }: PageProps<"/produ
   }
   const tab = TABS.find((t) => t === param(sp.tab)) ?? "indicadores"
 
-  const ctx = await getOrgContext()
   const canWrite = can(ctx.role, "harvest.write")
   const canAdjust = can(ctx.role, "produce.adjust")
   const [harvests, lots, movements, projects, openProjects, employees] = await Promise.all([

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 
 export async function getEmployees() {
@@ -44,10 +45,12 @@ export async function getLaborRecords(range: DateRange = {}, limit = 500) {
   if (range.from) query = query.gte("work_date", range.from)
   if (range.to) query = query.lte("work_date", range.to)
   if (range.projectId) query = query.eq("project_id", range.projectId)
-  const { data, error } = await query
-    .order("work_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("work_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar la mano de obra.")
   return data
 }
@@ -61,7 +64,7 @@ export async function getAttendance(range: DateRange = {}, limit = 500) {
     .eq("organization_id", ctx.organization.id)
   if (range.from) query = query.gte("work_date", range.from)
   if (range.to) query = query.lte("work_date", range.to)
-  const { data, error } = await query.order("work_date", { ascending: false }).order("created_at").limit(limit)
+  const { data, error } = await fetchRows(query.order("work_date", { ascending: false }).order("created_at").order("id"), limit)
   if (error) throw new Error("No fue posible cargar la asistencia.")
   return data
 }

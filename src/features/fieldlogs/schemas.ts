@@ -17,9 +17,10 @@ import {
   NONE,
 } from "@/lib/validation"
 import type { Permission } from "@/lib/auth/roles"
+import type { Database } from "@/types/database"
 
 /** Registros de bitácora que admiten cancelación y evidencias. */
-export const FIELD_RECORD_KINDS = ["riego", "actividad", "mantenimiento"] as const
+export const FIELD_RECORD_KINDS = ["riego", "actividad", "mantenimiento", "observacion"] as const
 export type FieldRecordKind = (typeof FIELD_RECORD_KINDS)[number]
 
 export const ATTACHMENT_ENTITIES = [
@@ -27,6 +28,7 @@ export const ATTACHMENT_ENTITIES = [
   "chemical_application",
   "field_activity",
   "machinery_maintenance",
+  "field_observation",
   "harvest",
   "payment",
   "expense",
@@ -39,6 +41,7 @@ export const ATTACHMENT_PERMISSION: Record<AttachmentEntity, Permission> = {
   chemical_application: "fieldlogs.write",
   field_activity: "fieldlogs.write",
   machinery_maintenance: "fieldlogs.write",
+  field_observation: "fieldlogs.write",
   harvest: "harvest.write",
   payment: "payments.write",
   expense: "expenses.write",
@@ -170,6 +173,64 @@ export const activitySchema = z
   })
   .refine((v) => notFuture(v.date), { path: ["date"], message: "No puede ser una fecha futura" })
 
+export const OBSERVATION_CATEGORIES = [
+  "plaga",
+  "enfermedad",
+  "maleza",
+  "clima",
+  "riego",
+  "nutricion",
+  "fenologia",
+  "otro",
+] as const satisfies readonly Database["public"]["Enums"]["observation_category"][]
+export type ObservationCategory = (typeof OBSERVATION_CATEGORIES)[number]
+
+export const OBSERVATION_CATEGORY_LABELS: Record<ObservationCategory, string> = {
+  plaga: "Plaga",
+  enfermedad: "Enfermedad",
+  maleza: "Maleza",
+  clima: "Clima / daño ambiental",
+  riego: "Riego / humedad",
+  nutricion: "Nutrición",
+  fenologia: "Fenología / desarrollo",
+  otro: "Otro",
+}
+
+export const OBSERVATION_SEVERITIES = ["baja", "media", "alta"] as const satisfies readonly Database["public"]["Enums"]["observation_severity"][]
+export type ObservationSeverity = (typeof OBSERVATION_SEVERITIES)[number]
+
+export const SEVERITY_LABELS: Record<ObservationSeverity, string> = { baja: "Baja", media: "Media", alta: "Alta" }
+
+const optionalCoordinate = (limit: number) =>
+  z
+    .string()
+    .trim()
+    .refine((v) => v === "" || (/^-?\d{1,3}(\.\d{1,6})?$/.test(v) && Math.abs(Number(v)) <= limit), "Coordenada no válida")
+    .transform((v) => (v === "" ? null : Number(v)))
+
+/** Observación de campo (plagas, enfermedades, clima…), con ubicación opcional del dispositivo. */
+export const observationSchema = z
+  .object({
+    id: z.uuid(),
+    projectId: requiredId("Selecciona el proyecto"),
+    plotId: optionalId(),
+    date: requiredDate(),
+    time: optionalTime(),
+    category: z.enum(OBSERVATION_CATEGORIES, { error: "Selecciona la categoría" }),
+    severity: z.enum(OBSERVATION_SEVERITIES, { error: "Selecciona la severidad" }),
+    title: requiredText(3, 120, "Describe brevemente lo observado (mínimo 3 caracteres)"),
+    description: optionalText(2000),
+    latitude: optionalCoordinate(90),
+    longitude: optionalCoordinate(180),
+    responsibleId: optionalId(),
+  })
+  .superRefine((v, ctx) => {
+    if (!notFuture(v.date)) ctx.addIssue({ code: "custom", path: ["date"], message: "No puede ser una fecha futura" })
+    if ((v.latitude === null) !== (v.longitude === null)) {
+      ctx.addIssue({ code: "custom", path: ["longitude"], message: "Indica latitud y longitud" })
+    }
+  })
+
 export const activityTypeSchema = z.object({
   id: z.uuid().optional(),
   name: requiredText(2, 80, "El nombre debe tener al menos 2 caracteres"),
@@ -190,6 +251,7 @@ export type ApplicationInput = z.input<typeof applicationSchema>
 export type ApplicationUpdateInput = z.input<typeof applicationUpdateSchema>
 export type ActivityInput = z.input<typeof activitySchema>
 export type ActivityTypeInput = z.input<typeof activityTypeSchema>
+export type ObservationInput = z.input<typeof observationSchema>
 export type AttachmentFile = z.infer<typeof attachmentFileSchema>
 
 /** Ruta de Storage: organización/tipo/registro/archivo (la RLS valida la primera carpeta). */

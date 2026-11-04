@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { MaintenanceAlert } from "./schemas"
 
@@ -54,10 +55,12 @@ export async function getUsage(filters: UsageFilters = {}, limit = 300) {
   if (filters.from) query = query.gte("usage_date", filters.from)
   if (filters.to) query = query.lte("usage_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query
-    .order("usage_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("usage_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar el uso de maquinaria.")
   return data
 }
@@ -73,10 +76,12 @@ export async function getMaintenance(filters: Omit<UsageFilters, "projectId"> = 
     .eq("organization_id", ctx.organization.id)
   if (filters.from) query = query.gte("maintenance_date", filters.from)
   if (filters.to) query = query.lte("maintenance_date", filters.to)
-  const { data, error } = await query
-    .order("maintenance_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("maintenance_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar el historial de mantenimiento.")
   return data
 }

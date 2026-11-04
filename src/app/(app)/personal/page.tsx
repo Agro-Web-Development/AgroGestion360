@@ -38,6 +38,8 @@ const TABS = ["jornadas", "asistencia", "cuadrillas", "asignaciones", "empleados
 
 export default async function LaborPage({ searchParams }: PageProps<"/personal">) {
   const sp = await searchParams
+  // El reloj se lee después de la sesión (ver produccion/page.tsx).
+  const ctx = await getOrgContext()
   const today = todayISO()
   const monthStart = `${today.slice(0, 8)}01`
   // Sin filtro, la vista inicia en el mes en curso.
@@ -45,7 +47,6 @@ export default async function LaborPage({ searchParams }: PageProps<"/personal">
   const range = { ...filters, from: filters.from ?? (filters.to ? undefined : monthStart) }
   const tab = TABS.find((t) => t === param(sp.tab)) ?? "jornadas"
 
-  const ctx = await getOrgContext()
   const canRecord = can(ctx.role, "labor.write")
   const canManage = can(ctx.role, "employees.write")
   const [employees, employeeOptions, records, attendance, crews, assignments, projects, activityTypes] = await Promise.all([

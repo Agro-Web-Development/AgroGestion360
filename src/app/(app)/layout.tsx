@@ -1,9 +1,11 @@
 import { Suspense } from "react"
 
 import { AppSidebar } from "@/components/layout/app-sidebar"
+import { ConnectionStatus } from "@/components/layout/connection-status"
 import { NotificationsMenu } from "@/components/layout/notifications-menu"
 import { OrganizationSwitcher } from "@/components/layout/organization-switcher"
 import { UserMenu } from "@/components/layout/user-menu"
+import { InstallPrompt } from "@/components/pwa/install-prompt"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -64,8 +66,10 @@ async function TopbarSlot() {
         </Badge>
       )}
       <div className="ml-auto flex items-center gap-1">
+        <ConnectionStatus userId={ctx.user.id} />
+        <InstallPrompt />
         <NotificationsMenu notifications={[]} />
-        <UserMenu name={ctx.user.fullName} email={ctx.user.email} roleLabel={ROLE_LABELS[ctx.role]} />
+        <UserMenu userId={ctx.user.id} name={ctx.user.fullName} email={ctx.user.email} roleLabel={ROLE_LABELS[ctx.role]} />
       </div>
     </div>
   )

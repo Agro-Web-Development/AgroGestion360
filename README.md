@@ -4,18 +4,30 @@ Plataforma SaaS multiempresa para la administración integral de proyectos agrí
 planeación, insumos, bitácoras de campo, maquinaria, personal, cosechas, ventas,
 cobranza y rentabilidad.
 
-**Estado:** Fases 1–5 completas: control operativo (inventario con almacenes, lotes y transferencias; bitácoras;
-maquinaria; personal; reportes), producción y comercialización (cortes y lotes, inventario de producto con mermas, ventas
-con borrador y entregas, pagos y anticipos, cuentas por cobrar, trazabilidad y dashboard comercial) y administración
-financiera (presupuestos con versiones, gastos directos y compartidos, consolidación de costos, rentabilidad, flujo de
-efectivo, alertas de presupuesto, dashboard financiero y reportes en CSV, Excel y PDF). Ver
-[docs/arquitectura.md](docs/arquitectura.md) y [docs/decisiones.md](docs/decisiones.md).
+**Estado:** Fases 1–6 completas. La Fase 6 prepara la plataforma para pruebas piloto: PWA instalable, captura en campo
+sin conexión con sincronización idempotente y revisión de conflictos, auditoría de seguridad, pruebas unitarias, de base
+de datos, de integración y de extremo a extremo, optimización de consultas, planes por organización y documentación de
+despliegue. Ver el [informe de la Fase 6](docs/informe-fase-6.md).
+
+## Documentación
+
+| Documento | Contenido |
+| --------- | --------- |
+| [docs/arquitectura.md](docs/arquitectura.md) | Arquitectura, estructura de carpetas, patrones y reglas por módulo. |
+| [docs/base-de-datos.md](docs/base-de-datos.md) | Modelo, diagrama entidad-relación, migraciones y políticas RLS. |
+| [docs/pwa-offline.md](docs/pwa-offline.md) | PWA, estrategia de caché, captura sin conexión y sincronización. |
+| [docs/seguridad.md](docs/seguridad.md) | Auditoría de seguridad, hallazgos y configuración obligatoria. |
+| [docs/despliegue.md](docs/despliegue.md) | Entornos, variables, Vercel + Supabase, dominio, migraciones y respaldos. |
+| [docs/saas-suscripciones.md](docs/saas-suscripciones.md) | Planes, límites y arquitectura del futuro módulo de suscripciones. |
+| [docs/solucion-de-errores.md](docs/solucion-de-errores.md) | Manual de solución de errores. |
+| [docs/decisiones.md](docs/decisiones.md) | Registro de decisiones y supuestos. |
+| [docs/informe-fase-6.md](docs/informe-fase-6.md) | Informe final: funcionalidades, pruebas, errores, riesgos y recomendaciones. |
 
 ## Stack
 
 Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS 4 ·
 shadcn/ui · Lucide · Recharts · React Hook Form + Zod · Supabase (PostgreSQL, Auth,
-Storage, RLS) · Vitest · pgTAP.
+Storage, RLS) · PWA (service worker propio + IndexedDB) · Vitest · pgTAP · Playwright.
 
 ## Requisitos
 
@@ -55,16 +67,21 @@ aplican en producción.
 
 ## Scripts
 
-| Script               | Descripción                                             |
-| -------------------- | ------------------------------------------------------- |
-| `npm run dev`        | Servidor de desarrollo                                  |
-| `npm run build`      | Compilación de producción                               |
-| `npm run lint`       | ESLint                                                  |
-| `npm run typecheck`  | Verificación de tipos                                   |
-| `npm test`           | Pruebas unitarias (Vitest)                              |
-| `npm run test:db`    | Pruebas de base de datos y RLS (pgTAP)                  |
-| `npm run db:reset`   | Recrea la BD local: migraciones + datos demo            |
-| `npm run db:types`   | Regenera `src/types/database.ts` desde el esquema local |
+| Script                     | Descripción                                                        |
+| -------------------------- | ------------------------------------------------------------------ |
+| `npm run dev`              | Servidor de desarrollo                                             |
+| `npm run build` / `start`  | Compilación y servidor de producción                               |
+| `npm run lint`             | ESLint                                                             |
+| `npm run typecheck`        | Verificación de tipos                                              |
+| `npm test`                 | Pruebas unitarias (Vitest)                                         |
+| `npm run test:db`          | Pruebas de base de datos y RLS (pgTAP)                             |
+| `npm run test:integration` | Integración con usuarios reales contra Supabase local (Vitest)     |
+| `npm run test:e2e`         | Extremo a extremo en navegador (Playwright; compila la app)         |
+| `npm run db:reset`         | Recrea la BD local: migraciones + datos demo                       |
+| `npm run db:types`         | Regenera `src/types/database.ts` desde el esquema local            |
+
+Antes de `test:e2e` la primera vez: `npx playwright install --with-deps chromium`. `E2E_SKIP_BUILD=1` reutiliza la última
+compilación. La integración continua (`.github/workflows/ci.yml`) ejecuta todo con Supabase local.
 
 ## Cómo probar la Fase 1
 
@@ -211,6 +228,23 @@ porcentaje), pagos parciales de gastos, 3 pagos a proveedores de almacén, un ap
 9. **Permisos:** `agronomo@…` y `campo@…` no ven el módulo financiero; `consulta@…` lo ve sin botones de captura.
 10. **Pruebas:** `npm test` (126) y `npm run test:db` (391, incluye `06_financial.test.sql`).
 
+## Cómo probar la Fase 6 (PWA, sin conexión y producción)
+
+1. **Instalar:** `npm run build && npm start` (el service worker solo se registra en producción). En Chrome aparece
+   *Instalar app* en la barra superior; en iPhone, Safari → Compartir → *Agregar a pantalla de inicio*.
+2. **Captura en campo:** entra como `campo@demo.agrogestion360.mx` y abre *Operación → Captura en campo* (`/campo`). La
+   primera visita descarga proyectos, parcelas y catálogos al dispositivo.
+3. **Sin conexión:** DevTools → Network → *Offline* (o modo avión) y recarga `/campo`: abre sin red. Registra un riego,
+   una actividad, una aplicación, una observación con foto y un corte: quedan como *Pendiente* en *Registros*.
+4. **Sincronizar:** vuelve a poner la red: pasan a *Sincronizado* con su fecha, las fotos se cargan y los registros
+   aparecen en Bitácoras (pestaña *Observaciones* para las observaciones) y en Producción.
+5. **Conflictos:** registra una aplicación que descuente del almacén más de lo que hay, o un riego con fecha anterior al
+   proyecto: queda *Requiere revisión* con el motivo; no se descuenta nada. *Corregir* y *Reintentar* lo resuelven.
+6. **Revisión:** como `agronomo@…` o `propietario@…`, *Operación → Sincronización* muestra los rechazos de todo el
+   equipo; *Descartar* exige motivo y el dispositivo lo verá en su siguiente intento.
+7. **Plan:** *Configuración → Organización* muestra el plan (*Piloto*, sin límites) y el uso.
+8. **Pruebas:** `npm test` (145), `npm run test:db` (436), `npm run test:integration` (45), `npm run test:e2e` (23).
+
 ## Seguridad
 
 - En el navegador solo se exponen `NEXT_PUBLIC_SUPABASE_URL` y la clave *publishable*.
@@ -218,3 +252,7 @@ porcentaje), pagos parciales de gastos, 3 pagos a proveedores de almacén, un ap
   con `server-only`) y únicamente tras verificar permisos.
 - Todas las tablas tienen RLS; las escrituras sensibles pasan por funciones SQL
   transaccionales que validan rol y organización.
+- Encabezados de seguridad (CSP, `X-Frame-Options`, `nosniff`, HSTS en producción) en `next.config.ts`.
+- El service worker no guarda respuestas de la API ni de Supabase; los datos sin conexión viven en IndexedDB por
+  usuario y se limpian al cerrar sesión.
+- Auditoría completa en [docs/seguridad.md](docs/seguridad.md).

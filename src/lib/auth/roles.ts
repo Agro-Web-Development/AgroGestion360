@@ -59,6 +59,7 @@ export const PERMISSIONS = {
   "budgets.write": ["propietario", "administrador", "finanzas"],
   "cash.write": ["propietario", "administrador", "finanzas"],
   "finance.read": ["propietario", "administrador", "finanzas", "consulta"],
+  "offline.review": ["propietario", "administrador", "agronomo"],
 } as const satisfies Record<string, readonly AppRole[]>
 
 export type Permission = keyof typeof PERMISSIONS

@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 
 export type ReportFilters = { from: string; to: string; projectId?: string }
@@ -22,8 +23,8 @@ export async function getConsumptionMovements(filters: ReportFilters) {
     .gte("movement_date", filters.from)
     .lte("movement_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query.limit(REPORT_LIMIT)
-  if (error) throw new Error("No fue posible cargar los consumos de insumos.")
+  const { data, error } = await fetchRows(query.order("movement_date").order("id"), REPORT_LIMIT)
+  if (error || !data) throw new Error("No fue posible cargar los consumos de insumos.")
   return data
 }
 
@@ -39,7 +40,7 @@ export async function getCostEntries(filters: ReportFilters) {
     .gte("entry_date", filters.from)
     .lte("entry_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query.limit(REPORT_LIMIT * 4)
-  if (error) throw new Error("No fue posible calcular los costos operativos.")
+  const { data, error } = await fetchRows(query.order("entry_date").order("source").order("source_id"), REPORT_LIMIT * 4)
+  if (error || !data) throw new Error("No fue posible calcular los costos operativos.")
   return data.map((e) => ({ project_id: e.project_id!, source: e.source!, amount: e.amount }))
 }

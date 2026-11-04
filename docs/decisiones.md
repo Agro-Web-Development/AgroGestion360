@@ -76,6 +76,20 @@
 | 72 | Umbrales de alerta por organización (70/90/100 por omisión), comparados con importes exactos (sin redondear el porcentaje). | Un 89.96 % no debe verse como crítico por redondeo; la BD y la interfaz usan la misma regla. |
 | 73 | Importes en la interfaz con aritmética entera (`lib/money.ts`: centavos y BigInt); los cálculos financieros persistentes viven en NUMERIC en la BD. | Evita errores de punto flotante en sumas, prorrateos y porcentajes mostrados o exportados. |
 | 74 | Excel generado sin dependencias (`lib/xlsx.ts`) y PDF mediante la impresión del navegador con estilos de impresión que muestran solo el reporte. | Evita dependencias pesadas para dos formatos de salida; el .xlsx conserva números y fechas reales. |
+| 75 | Service worker propio (sin Serwist/Workbox) con estrategias explícitas: estáticos caché primero, navegación red primero, y **nunca** API, RSC, Server Actions ni Supabase. | Pocas reglas, auditables en un archivo; evita guardar respuestas privadas por accidente. |
+| 76 | La captura sin conexión vive en `/campo`, una página **estática** que lee sus datos de IndexedDB. | Se puede guardar en caché sin incluir datos de la sesión, y abre sin red. |
+| 77 | La sincronización usa Route Handlers (`/api/campo/*`), no Server Actions. | El id de una Server Action cambia entre despliegues; un dispositivo con la página en caché de una versión anterior no podría sincronizar. |
+| 78 | El id local del registro es también el id en la base y la clave de `offline_submissions`. | Idempotencia de extremo a extremo sin tabla de mapeo; reenviar nunca duplica. |
+| 79 | Solo registros de campo sin conexión (riego, actividad, aplicación, observación, corte y fotos); no ventas, pagos, gastos ni movimientos de inventario. | Las operaciones con dinero o existencias necesitan el estado actual del servidor; la aplicación que descuenta del almacén se revalida al sincronizar y, si no alcanza, queda en revisión sin descontar. |
+| 80 | Errores de negocio (códigos 22xxx, 23xxx, 42501, P0001, P0002) → *requiere revisión*; cualquier otro → *error* transitorio con reintento automático. | Reintentar algo que la regla rechaza no lo arregla y saturaría al servidor; una falla de red sí se resuelve sola. |
+| 81 | Conflicto = mismo id ya sincronizado con otra huella SHA-256 del contenido canónico. Se conserva la versión del servidor. | El servidor es la fuente de verdad; la corrección posterior se hace en línea, con auditoría. |
+| 82 | Los rechazos se guardan en el servidor y los revisores (propietario, administrador, agrónomo) los ven en `/sincronizacion`; solo pueden descartarlos con motivo. | Un usuario autorizado decide; corregir la causa (stock, parcela, proyecto) y que el dispositivo reintente evita crear registros con la identidad de otra persona. |
+| 83 | Al cerrar sesión se borran sesión y catálogos del dispositivo, pero se conservan los registros sin sincronizar (con aviso). | No perder trabajo de campo; solo su autor los ve y los envía. |
+| 84 | Observaciones de campo como tabla propia (`field_observations`). | Era un tipo de registro pedido sin equivalente: no es una actividad (no tiene costo ni tipo de labor). |
+| 85 | Planes como datos (`plans`) con límites aplicados por triggers; organizaciones en el plan `piloto` sin límites. Sin cobros. | Estructura lista para comercializar sin cambiar el comportamiento durante el piloto. Una invitación reserva su lugar para que aceptarla nunca falle. |
+| 86 | `fetchRows` pagina cualquier consulta que pueda pasar de 1,000 filas, con orden total. | PostgREST corta en `max_rows` sin error; los reportes quedaban incompletos en silencio. |
+| 87 | Fotos reducidas en el navegador (1920 px, JPEG 82 %) antes de subir o guardar sin conexión. | Señal débil en campo y espacio en el teléfono; se conserva el original si el navegador no puede procesarlo (HEIC). |
+| 88 | CSP con `'unsafe-inline'` en scripts. | Los nonces obligarían a renderizar todo de forma dinámica y perder el prerenderizado; las demás directivas limitan orígenes y enmarcado. |
 
 ## Pendientes conocidos
 
@@ -89,9 +103,8 @@
 - Las listas de movimientos y registros muestran los 200–500 más recientes; falta paginación.
 - Las partidas de ventas anteriores a la Fase 4 no tienen lote propio si se repartieron entre varios lotes; su origen
   está en `production_movements` / `v_sale_lot_trace`. Esos borradores antiguos no existen (todas eran confirmadas).
-- Los formularios de la Fase 5 (gasto compartido, presupuesto, pagos) se verificaron con typecheck, pruebas de esquemas,
-  del reparto y de las RPC, y renderizado HTTP por rol; falta la prueba visual y E2E en navegador (Fase 6).
-- Los formularios de la Fase 4 se verificaron con typecheck, pruebas de esquemas y RPC y renderizado HTTP por rol; aún
-  no hay pruebas E2E en navegador (Fase 6).
-- `npm audit` reporta vulnerabilidades moderadas en dependencias de desarrollo
-  transitivas del generador; se revisarán antes del despliegue (Fase 6).
+- Las pruebas E2E en navegador cubren autenticación, PWA, captura sin conexión y versión móvil; los flujos de venta,
+  pagos y gastos se prueban con usuarios reales en la capa de datos (`tests/integration/`), no con clics en el navegador.
+- `npm audit` (solo desarrollo) reporta vulnerabilidades moderadas transitivas del CLI de shadcn; las dependencias de
+  producción no tienen vulnerabilidades.
+- Las listas operativas muestran los 300–500 registros más recientes del periodo filtrado; falta navegación por páginas.

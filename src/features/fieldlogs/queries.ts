@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { TimelineKind } from "./schemas"
 
@@ -20,10 +21,12 @@ export async function getIrrigationLogs(filters: LogFilters = {}, limit = LIMIT)
   if (filters.from) query = query.gte("log_date", filters.from)
   if (filters.to) query = query.lte("log_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query
-    .order("log_date", { ascending: false })
-    .order("start_time", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("log_date", { ascending: false })
+      .order("start_time", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar los riegos.")
   return data
 }
@@ -40,10 +43,12 @@ export async function getApplications(filters: LogFilters = {}, limit = LIMIT) {
   if (filters.from) query = query.gte("application_date", filters.from)
   if (filters.to) query = query.lte("application_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query
-    .order("application_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("application_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar las aplicaciones.")
   return data
 }
@@ -60,11 +65,35 @@ export async function getActivities(filters: LogFilters = {}, limit = LIMIT) {
   if (filters.from) query = query.gte("activity_date", filters.from)
   if (filters.to) query = query.lte("activity_date", filters.to)
   if (filters.projectId) query = query.eq("project_id", filters.projectId)
-  const { data, error } = await query
-    .order("activity_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const { data, error } = await fetchRows(
+    query    .order("activity_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar las actividades.")
+  return data
+}
+
+export async function getObservations(filters: LogFilters = {}, limit = LIMIT) {
+  const ctx = await getOrgContext()
+  const supabase = await createClient()
+  let query = supabase
+    .from("field_observations")
+    .select(
+      "id, project_id, plot_id, observation_date, observation_time, category, severity, title, description, latitude, longitude, status, cancel_reason, responsible:employees(full_name), project:projects!inner(id, code, status), assignment:project_plots(plot:plots!inner(name))"
+    )
+    .eq("organization_id", ctx.organization.id)
+  if (filters.from) query = query.gte("observation_date", filters.from)
+  if (filters.to) query = query.lte("observation_date", filters.to)
+  if (filters.projectId) query = query.eq("project_id", filters.projectId)
+  const { data, error } = await fetchRows(
+    query    .order("observation_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id"),
+    limit
+  )
+  if (error) throw new Error("No fue posible cargar las observaciones.")
   return data
 }
 
@@ -135,6 +164,7 @@ export async function getProjectTimeline(projectId: string, filters: Omit<LogFil
 export type IrrigationLog = Awaited<ReturnType<typeof getIrrigationLogs>>[number]
 export type Application = Awaited<ReturnType<typeof getApplications>>[number]
 export type FieldActivity = Awaited<ReturnType<typeof getActivities>>[number]
+export type FieldObservation = Awaited<ReturnType<typeof getObservations>>[number]
 export type ActivityType = Awaited<ReturnType<typeof getActivityTypes>>[number]
 export type TimelineEntry = Awaited<ReturnType<typeof getProjectTimeline>>[number]
 

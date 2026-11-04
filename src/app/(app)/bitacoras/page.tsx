@@ -1,4 +1,4 @@
-import { ClipboardList, Droplets, FlaskConical, History, Plus } from "lucide-react"
+import { ClipboardList, Droplets, Eye, FlaskConical, History, Plus } from "lucide-react"
 import type { Metadata } from "next"
 
 import { PageHeader } from "@/components/layout/page-header"
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UrlTabs } from "@/components/shared/url-tabs"
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ActivityDialog, ActivityTypeDialog, ApplicationDialog, IrrigationDialog } from "@/features/fieldlogs/components/log-dialogs"
-import { ActivitiesTable, ActivityTypesTable, ApplicationsTable, IrrigationTable } from "@/features/fieldlogs/components/log-tables"
+import { ActivitiesTable, ActivityTypesTable, ApplicationsTable, IrrigationTable, ObservationsTable } from "@/features/fieldlogs/components/log-tables"
 import { ProjectTimeline } from "@/features/fieldlogs/components/timeline"
 import {
   getActivities,
@@ -18,6 +18,7 @@ import {
   getActivityTypes,
   getApplications,
   getIrrigationLogs,
+  getObservations,
   getProjectTimeline,
 } from "@/features/fieldlogs/queries"
 import { formatDuration } from "@/features/fieldlogs/schemas"
@@ -32,7 +33,7 @@ import { dateParam, idParam, param } from "@/lib/search-params"
 
 export const metadata: Metadata = { title: "Bitácoras" }
 
-const TABS = ["riego", "aplicaciones", "actividades", "cronologia", "catalogo"] as const
+const TABS = ["riego", "aplicaciones", "actividades", "observaciones", "cronologia", "catalogo"] as const
 
 export default async function FieldLogsPage({ searchParams }: PageProps<"/bitacoras">) {
   const sp = await searchParams
@@ -41,11 +42,12 @@ export default async function FieldLogsPage({ searchParams }: PageProps<"/bitaco
 
   const ctx = await getOrgContext()
   const canWrite = can(ctx.role, "fieldlogs.write")
-  const [irrigations, applications, activities, types, typeOptions, employees, openProjects, allProjects, machines] =
+  const [irrigations, applications, activities, observations, types, typeOptions, employees, openProjects, allProjects, machines] =
     await Promise.all([
       getIrrigationLogs(filters),
       getApplications(filters),
       getActivities(filters),
+      getObservations(filters),
       getActivityTypes(),
       getActivityTypeOptions(),
       getEmployeeOptions(),
@@ -100,6 +102,11 @@ export default async function FieldLogsPage({ searchParams }: PageProps<"/bitaco
                   </Button>
                 }
               />
+              <Button variant="outline" asChild>
+                <a href="/campo">
+                  <Eye aria-hidden /> Observación
+                </a>
+              </Button>
               <ActivityDialog
                 {...shared}
                 activityTypes={typeOptions}
@@ -145,6 +152,7 @@ export default async function FieldLogsPage({ searchParams }: PageProps<"/bitaco
           <TabsTrigger value="riego">Riego</TabsTrigger>
           <TabsTrigger value="aplicaciones">Aplicaciones</TabsTrigger>
           <TabsTrigger value="actividades">Actividades</TabsTrigger>
+          <TabsTrigger value="observaciones">Observaciones</TabsTrigger>
           <TabsTrigger value="cronologia">Cronología</TabsTrigger>
           <TabsTrigger value="catalogo">Catálogo de actividades</TabsTrigger>
         </TabsList>
@@ -166,6 +174,13 @@ export default async function FieldLogsPage({ searchParams }: PageProps<"/bitaco
           <Card>
             <CardContent>
               <ActivitiesTable activities={activities} activityTypes={typeOptions} {...shared} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="observaciones">
+          <Card>
+            <CardContent>
+              <ObservationsTable observations={observations} {...shared} />
             </CardContent>
           </Card>
         </TabsContent>

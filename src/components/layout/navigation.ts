@@ -13,7 +13,9 @@ import {
   Map,
   Package,
   ReceiptText,
+  RefreshCcw,
   ShoppingCart,
+  Smartphone,
   Sprout,
   Tractor,
   TrendingUp,
@@ -53,6 +55,8 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { title: "Inventario", href: "/inventario", icon: Package },
       { title: "Bitácoras", href: "/bitacoras", icon: ClipboardList },
+      { title: "Captura en campo", href: "/campo", icon: Smartphone },
+      { title: "Sincronización", href: "/sincronizacion", icon: RefreshCcw },
       { title: "Maquinaria", href: "/maquinaria", icon: Tractor },
       { title: "Personal", href: "/personal", icon: UsersRound },
     ],

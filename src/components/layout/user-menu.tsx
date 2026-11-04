@@ -17,10 +17,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { clearWorkerCaches } from "@/components/pwa/service-worker"
 import { signOut } from "@/features/auth/actions"
+import { clearContext, listRecords } from "@/features/offline/idb"
+import { unsyncedCount } from "@/features/offline/queue"
 import { initials } from "@/lib/format"
 
-export function UserMenu({ name, email, roleLabel }: { name: string; email: string; roleLabel: string }) {
+/**
+ * Al cerrar sesión se borran del dispositivo la sesión y los catálogos de la
+ * captura sin conexión. Los registros sin sincronizar se conservan y se avisa
+ * al usuario: se enviarán cuando vuelva a iniciar sesión con su cuenta.
+ */
+async function prepareSignOut(userId: string): Promise<boolean> {
+  try {
+    const records = await listRecords(userId)
+    const pending = unsyncedCount(records)
+    if (
+      pending > 0 &&
+      !window.confirm(
+        `Tienes ${pending} ${pending === 1 ? "registro" : "registros"} sin sincronizar. Se conservarán en este dispositivo y se enviarán cuando vuelvas a iniciar sesión. ¿Cerrar sesión?`
+      )
+    ) {
+      return false
+    }
+    await clearContext()
+  } catch {
+    // Sin IndexedDB: no hay nada que limpiar.
+  }
+  clearWorkerCaches()
+  return true
+}
+
+export function UserMenu({ userId, name, email, roleLabel }: { userId: string; name: string; email: string; roleLabel: string }) {
   const { theme, setTheme } = useTheme()
   const [pending, startTransition] = useTransition()
 
@@ -67,7 +95,11 @@ export function UserMenu({ name, email, roleLabel }: { name: string; email: stri
         <DropdownMenuItem
           variant="destructive"
           disabled={pending}
-          onSelect={() => startTransition(() => signOut())}
+          onSelect={() =>
+            startTransition(async () => {
+              if (await prepareSignOut(userId)) await signOut()
+            })
+          }
         >
           <LogOut aria-hidden /> Cerrar sesión
         </DropdownMenuItem>

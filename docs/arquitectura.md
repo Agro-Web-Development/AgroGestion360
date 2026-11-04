@@ -3,12 +3,16 @@
 ## Visión general
 
 ```
-Navegador (React 19, PWA en Fase 6)
-   │  Server Actions / RSC streaming
+Navegador (React 19, PWA instalable)
+   ├─ public/sw.js ............ service worker: estáticos en caché, /campo y /offline sin red; nunca API ni Supabase
+   ├─ IndexedDB ............... registros capturados sin conexión, fotos pendientes y catálogos (por usuario)
+   │  Server Actions / RSC streaming · /api/campo/* (sincronización)
 Next.js 16 (App Router, Cache Components)
-   ├─ src/proxy.ts ............ refresca la sesión y redirige si no hay sesión (verificación optimista)
+   ├─ src/proxy.ts ............ refresca la sesión y redirige si no hay sesión (verificación optimista; 401 JSON en /api)
    ├─ lib/auth/session.ts ..... DAL: getCurrentUser / getMemberships / getOrgContext
+   ├─ lib/auth/api-session.ts . sesión para Route Handlers (sin redirecciones) y verificación de origen
    ├─ features/*/actions.ts ... Server Actions: validan con Zod, verifican rol, llaman a Supabase
+   ├─ features/*/mutations.ts . altas compartidas por las Server Actions y la sincronización sin conexión
    └─ features/*/queries.ts ... lecturas server-only filtradas por la organización activa
    │  PostgREST (clave publishable + JWT del usuario)
 Supabase
@@ -45,19 +49,26 @@ src/
       presupuestos/    listado con alertas, [id] (comparativo y versiones), [id]/editar (nueva revisión)
       gastos/ rentabilidad/ flujo-efectivo/ reportes-financieros/ (CSV, Excel y PDF)
       configuracion/   organizacion, usuarios, perfil
+      sincronizacion/  revisión de registros capturados sin conexión
     auth/callback/     intercambio de código PKCE / token_hash
     auth/aceptar/      aceptación de invitaciones (tokens en el fragmento)
     bienvenida/        alta de la primera organización
+    campo/             captura en campo sin conexión (página estática; datos en IndexedDB)
+    offline/           respaldo «Sin conexión» del service worker
+    api/campo/         contexto (catálogos), sincronizar y evidencias (Route Handlers)
+    manifest.ts        manifiesto de la PWA
   components/
     ui/                componentes shadcn/ui
     layout/            sidebar, selector de organización, menús
     forms/             FormInput, FormSelect, useActionForm, SubmitButton
     shared/            KpiCard, ConfirmAction, ReasonDialog, FilterBar (filtros en la URL), UrlTabs,
                        SearchInput, CatalogRowActions
+    pwa/               registro del service worker y botón «Instalar app»
   features/<módulo>/   schemas.ts (Zod) · actions.ts · queries.ts · components/
                        (fieldlogs = bitácoras y evidencias; reports = agregaciones puras y CSV;
                        harvests = cortes, lotes e inventario de producto; commercial = dashboard comercial;
-                       finance = presupuestos, gastos, flujo de efectivo, análisis puro en analysis.ts)
+                       finance = presupuestos, gastos, flujo de efectivo, análisis puro en analysis.ts;
+                       offline = cola, IndexedDB, motor de sincronización, API y formularios de campo)
   lib/
     supabase/          client, server, proxy, admin (server-only)
     auth/              roles.ts (matriz de permisos), session.ts (DAL)
@@ -66,12 +77,19 @@ src/
     money.ts           importes en centavos / BigInt: sumas, redondeo y prorrateo idénticos a PostgreSQL
     xlsx.ts            generador de .xlsx sin dependencias (ZIP sin compresión + SpreadsheetML)
     search-params.ts   lectura validada de filtros de la URL (fechas, UUID)
+    safe-redirect.ts   redirecciones internas seguras (evita redirecciones abiertas)
+    image.ts           reducción de fotografías antes de subirlas o guardarlas sin conexión
+    supabase/rows.ts   fetchRows: consultas de más de 1,000 filas en páginas (límite max_rows de PostgREST)
   types/database.ts    tipos generados por `supabase gen types`
 supabase/
   migrations/          una migración por fase
   seed.sql             datos de demostración (solo local)
   tests/database/      pruebas pgTAP
-tests/unit/            pruebas Vitest
+tests/
+  unit/                pruebas Vitest (funciones puras, esquemas, cola de sincronización)
+  integration/         Vitest contra Supabase local con usuarios reales (18 procesos, sincronización)
+  e2e/                 Playwright (autenticación, PWA, sin conexión, móvil)
+.github/workflows/     CI: lint, tipos, unitarias, pgTAP, integración y E2E
 ```
 
 ## Patrones
@@ -411,6 +429,34 @@ administrador, finanzas). Los comprobantes de gastos (imagen o PDF) siguen la pr
 
 **Resultado estimado** = ventas reconocidas (confirmadas) − costo de producción acumulado. Ver decisión 66.
 
+### Implementado (Fase 6 · preparación comercial y producción)
+
+Migración `20261105060000_platform.sql`. Detalle en [pwa-offline.md](pwa-offline.md), [seguridad.md](seguridad.md),
+[base-de-datos.md](base-de-datos.md), [despliegue.md](despliegue.md) y [saas-suscripciones.md](saas-suscripciones.md).
+
+| Elemento                 | Descripción                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| field_observations       | Observaciones de campo (plaga, enfermedad, maleza, clima, riego, nutrición, fenología) con severidad, ubicación opcional y evidencias; se cancelan con motivo. Pestaña *Observaciones* en Bitácoras. |
+| offline_submissions      | Bitácora de sincronización: id = clave de idempotencia = id del registro; huella del contenido; estado (`sincronizado`, `requiere_revision`, `descartado`), intentos, error, fechas de captura, recepción y sincronización, revisión. Solo RPC. |
+| plans · organizations.plan_code | Planes con límites (proyectos vigentes, usuarios, almacenamiento) y funciones; plan `piloto` sin límites. Triggers de límite y `organization_usage`. |
+| Storage                  | Política de eliminación corregida (membresía vigente; comprobantes solo propietario/administrador). |
+| Índices                  | 22 índices de llaves foráneas usadas al eliminar catálogos.                                    |
+
+RPC: `save_offline_submission` (máquina de estados; no sobrescribe lo sincronizado ni lo descartado y reporta
+conflictos), `discard_offline_submission` (revisores), `organization_usage`. `cancel_field_record` admite `observacion`.
+
+Aplicación:
+
+- **PWA:** manifiesto, íconos, service worker propio (sin dependencias), botón de instalación, indicador de conexión y
+  pendientes en la barra superior.
+- **Captura sin conexión:** `/campo` (estática, en caché), cola en IndexedDB, sincronización automática con espera
+  creciente y Web Locks, fotos reducidas y subidas después de confirmar el registro, pantalla de registros con estados,
+  corrección, reintento y eliminación; `/sincronizacion` para revisores.
+- **Altas compartidas:** `features/fieldlogs/mutations.ts` y `features/harvests/mutations.ts` las usan tanto las Server
+  Actions como la API de sincronización: la validación y las reglas son idénticas en línea y sin conexión.
+- **Seguridad:** redirecciones seguras, encabezados (CSP y otros), 401 JSON en la API, verificación de origen.
+- **Consultas:** `fetchRows` pagina las consultas de reportes, cobranza y listados que pueden superar 1,000 filas.
+
 ### Pendiente
 
 - Cuentas por pagar de compras de almacén (hoy el pago a proveedor se registra sin ligarse a la entrada).
@@ -419,6 +465,10 @@ administrador, finanzas). Los comprobantes de gastos (imagen o PDF) siguen la pr
 - Edición de registros de costo (uso de maquinaria y jornadas) en lugar de eliminar y volver a capturar.
 - Ventas: anticipos sin venta, notas de crédito, devoluciones parciales de producto y CFDI.
 - Inventario de producto por almacén o cámara fría (hoy la existencia es por lote).
+- Paginación con navegación por páginas en los listados operativos (hoy: filtros de periodo en el servidor y los
+  registros más recientes; los reportes traen hasta 5,000 y avisan si se alcanzó el límite).
+- Observaciones en la cronología del proyecto y captura sin conexión de jornadas y uso de maquinaria.
+- Suscripciones con cobro, funciones por plan aplicadas en RLS y panel interno (ver saas-suscripciones.md).
 
 ## Roadmap
 
@@ -430,4 +480,5 @@ administrador, finanzas). Los comprobantes de gastos (imagen o PDF) siguen la pr
    pagos y anticipos, cuentas por cobrar, trazabilidad por lote y dashboard comercial.
 5. ✅ Presupuestos con versiones, gastos directos y compartidos, consolidación de costos, rentabilidad, flujo de efectivo,
    alertas configurables, dashboard financiero y reportes en CSV, Excel y PDF.
-6. PWA, captura sin conexión con sincronización, pruebas E2E, endurecimiento y despliegue.
+6. ✅ PWA, captura sin conexión con sincronización y revisión, auditoría de seguridad, pruebas de integración y E2E,
+   optimización, planes por organización, documentación y despliegue.

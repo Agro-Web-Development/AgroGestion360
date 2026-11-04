@@ -3,6 +3,7 @@ import "server-only"
 import { notFound } from "next/navigation"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { DeliveryState, PaymentState } from "./schemas"
 
@@ -24,8 +25,9 @@ export async function getSales(filters: SaleFilters = {}) {
   if (filters.from) query = query.gte("sale_date", filters.from)
   if (filters.to) query = query.lte("sale_date", filters.to)
   if (filters.customerId) query = query.eq("customer_id", filters.customerId)
-  const { data, error } = await query
-  if (error) throw new Error("No fue posible cargar las ventas.")
+  // Sin límite práctico: la cobranza suma todas las ventas (en páginas de 1,000).
+  const { data, error } = await fetchRows(query.order("id"), 50_000)
+  if (error || !data) throw new Error("No fue posible cargar las ventas.")
   return data.map((s) => ({
     id: s.id!,
     code: s.code!,

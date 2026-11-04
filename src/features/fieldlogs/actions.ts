@@ -3,10 +3,12 @@
 import { refresh } from "next/cache"
 import { z } from "zod"
 
-import { dbErrorMessage, failure, isDuplicateId, success, validationFailure, type ActionResult } from "@/lib/actions"
+import { dbErrorMessage, failure, success, validationFailure, type ActionResult } from "@/lib/actions"
 import { can } from "@/lib/auth/roles"
 import { getOrgContext } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
+import { applicationFailure, plotFailure } from "./errors"
+import { createActivity, createApplication, createIrrigation, createObservation, insertAttachments } from "./mutations"
 import {
   activitySchema,
   activityTypeSchema,
@@ -20,6 +22,7 @@ import {
   isReceiptEntity,
   irrigationSchema,
   MAX_ATTACHMENTS_PER_UPLOAD,
+  observationSchema,
   type ActivityInput,
   type ActivityTypeInput,
   type ApplicationInput,
@@ -28,17 +31,12 @@ import {
   type AttachmentFile,
   type FieldRecordKind,
   type IrrigationInput,
+  type ObservationInput,
 } from "./schemas"
 
 const idSchema = z.uuid()
 const reasonSchema = z.string().trim().min(5, "Indica el motivo").max(500)
 const BUCKET = "evidencias"
-
-function plotFailure(error: Parameters<typeof dbErrorMessage>[0]): ActionResult<never> {
-  if (error.code === "23503") return failure("La parcela no está asignada al proyecto.", { plotId: ["Parcela no válida"] })
-  if (error.code === "22023" && error.message.includes("fecha")) return failure(error.message, { date: [error.message] })
-  return failure(dbErrorMessage(error))
-}
 
 /** Alta (id del cliente, idempotente) o edición de un riego. */
 export async function saveIrrigation(input: IrrigationInput, isUpdate = false): Promise<ActionResult> {
@@ -70,14 +68,8 @@ export async function saveIrrigation(input: IrrigationInput, isUpdate = false): 
     if (error) return plotFailure(error)
     if (!data?.length) return failure("No tienes permiso para modificar este riego.")
   } else {
-    const { error } = await supabase.from("irrigation_logs").insert({
-      ...values,
-      id: v.id,
-      organization_id: ctx.organization.id,
-      project_id: v.projectId,
-      plot_id: v.plotId,
-    })
-    if (error && !isDuplicateId(error)) return plotFailure(error)
+    const error = await createIrrigation(supabase, ctx.organization.id, v)
+    if (error) return plotFailure(error)
   }
 
   refresh()
@@ -94,37 +86,8 @@ export async function registerApplication(input: ApplicationInput): Promise<Acti
 
   const v = parsed.data
   const supabase = await createClient()
-  const { error } = await supabase.rpc("register_chemical_application", {
-    p_id: v.id,
-    p_project: v.projectId,
-    p_plot: v.plotId,
-    p_date: v.date,
-    p_product: v.productId,
-    p_quantity: v.quantity,
-    p_treated_area: v.treatedArea,
-    p_issue_from_stock: v.issueFromStock,
-    p_warehouse: v.issueFromStock ? (v.warehouseId ?? undefined) : undefined,
-    p_lot: v.lotId ?? undefined,
-    p_lot_number: v.lotNumber ?? undefined,
-    p_time: v.time ?? undefined,
-    p_active_ingredient: v.activeIngredient ?? undefined,
-    p_responsible: v.responsibleId ?? undefined,
-    p_machine: v.machineId ?? undefined,
-    p_equipment: v.equipment ?? undefined,
-    p_reentry_hours: v.reentryHours ?? undefined,
-    p_preharvest_days: v.preharvestDays ?? undefined,
-    p_notes: v.notes ?? undefined,
-  })
-  if (error) {
-    if (error.code === "22023" && error.message.startsWith("Existencia insuficiente")) {
-      return failure(error.message, { quantity: [error.message] })
-    }
-    if (error.code === "22023" && error.message.includes("superficie")) {
-      return failure(error.message, { treatedArea: [error.message] })
-    }
-    if (error.code === "22023" && /lote/i.test(error.message)) return failure(error.message, { lotId: [error.message] })
-    return plotFailure(error)
-  }
+  const error = await createApplication(supabase, v)
+  if (error) return applicationFailure(error)
 
   refresh()
   return success(undefined, v.issueFromStock ? "Aplicación registrada y descontada del almacén." : "Aplicación registrada.")
@@ -206,17 +169,54 @@ export async function saveActivity(input: ActivityInput, isUpdate = false): Prom
     if (error) return plotFailure(error)
     if (!data?.length) return failure("No tienes permiso para modificar esta actividad.")
   } else {
-    const { error } = await supabase
-      .from("field_activities")
-      .insert({ ...values, id: v.id, organization_id: ctx.organization.id, project_id: v.projectId })
-    if (error && !isDuplicateId(error)) return plotFailure(error)
+    const error = await createActivity(supabase, ctx.organization.id, v)
+    if (error) return plotFailure(error)
   }
 
   refresh()
   return success(undefined, isUpdate ? "Actividad actualizada." : "Actividad registrada.")
 }
 
-/** Cancelación con motivo de riegos, actividades y mantenimientos (no se eliminan). */
+/** Alta (id del cliente, idempotente) o edición de una observación de campo. */
+export async function saveObservation(input: ObservationInput, isUpdate = false): Promise<ActionResult> {
+  const parsed = observationSchema.safeParse(input)
+  if (!parsed.success) return validationFailure(parsed.error)
+
+  const ctx = await getOrgContext()
+  if (!can(ctx.role, "fieldlogs.write")) return failure("No tienes permiso para registrar observaciones.")
+
+  const v = parsed.data
+  const supabase = await createClient()
+  if (isUpdate) {
+    const { data, error } = await supabase
+      .from("field_observations")
+      .update({
+        plot_id: v.plotId,
+        observation_date: v.date,
+        observation_time: v.time,
+        category: v.category,
+        severity: v.severity,
+        title: v.title,
+        description: v.description,
+        latitude: v.latitude,
+        longitude: v.longitude,
+        responsible_id: v.responsibleId,
+      })
+      .eq("id", v.id)
+      .eq("organization_id", ctx.organization.id)
+      .select("id")
+    if (error) return plotFailure(error)
+    if (!data?.length) return failure("No tienes permiso para modificar esta observación.")
+  } else {
+    const error = await createObservation(supabase, ctx.organization.id, v)
+    if (error) return plotFailure(error)
+  }
+
+  refresh()
+  return success(undefined, isUpdate ? "Observación actualizada." : "Observación registrada.")
+}
+
+/** Cancelación con motivo de riegos, actividades, mantenimientos y observaciones (no se eliminan). */
 export async function cancelFieldRecord(kind: FieldRecordKind, recordId: string, reason: string): Promise<ActionResult> {
   if (!FIELD_RECORD_KINDS.includes(kind) || !idSchema.safeParse(recordId).success) return failure("Registro no válido.")
   const parsedReason = reasonSchema.safeParse(reason)
@@ -343,18 +343,8 @@ export async function registerAttachments(
   if (!can(ctx.role, ATTACHMENT_PERMISSION[entity])) return failure("No tienes permiso para agregar evidencias.")
 
   const supabase = await createClient()
-  const { error } = await supabase.from("attachments").insert(
-    parsed.data.map((f) => ({
-      organization_id: ctx.organization.id,
-      entity_type: entity,
-      entity_id: entityId,
-      storage_path: f.path,
-      file_name: f.name,
-      mime_type: f.type,
-      size_bytes: f.size,
-    }))
-  )
-  if (error && !(error.code === "23505" && error.message.includes("storage_path"))) {
+  const error = await insertAttachments(supabase, ctx.organization.id, entity, entityId, parsed.data)
+  if (error) {
     // Si no se pudo registrar, el archivo no debe quedar huérfano en Storage.
     await supabase.storage.from(BUCKET).remove(parsed.data.map((f) => f.path))
     return failure(dbErrorMessage(error))

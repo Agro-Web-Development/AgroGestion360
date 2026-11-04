@@ -4,15 +4,15 @@ import { PageHeader } from "@/components/layout/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { OrganizationForm } from "@/features/organizations/components/organization-form"
-import { getOrganizationDetails } from "@/features/organizations/queries"
+import { getOrganizationDetails, getPlanUsage, type PlanUsage } from "@/features/organizations/queries"
 import { can } from "@/lib/auth/roles"
 import { getOrgContext } from "@/lib/auth/session"
-import { formatDate } from "@/lib/format"
+import { formatDate, formatNumber } from "@/lib/format"
 
 export const metadata: Metadata = { title: "Organización" }
 
 export default async function OrganizationPage() {
-  const [ctx, org] = await Promise.all([getOrgContext(), getOrganizationDetails()])
+  const [ctx, org, plan] = await Promise.all([getOrgContext(), getOrganizationDetails(), getPlanUsage()])
   const canEdit = can(ctx.role, "organization.manage")
 
   return (
@@ -62,8 +62,42 @@ export default async function OrganizationPage() {
             </dl>
           </CardContent>
         </Card>
+        <PlanCard plan={plan} />
       </div>
     </>
+  )
+}
+
+const FEATURE_LABELS: Record<string, string> = {
+  operacion: "Operación agrícola",
+  offline: "Captura sin conexión",
+  comercial: "Ventas y cobranza",
+  finanzas: "Finanzas y rentabilidad",
+  reportes_excel: "Reportes en Excel y PDF",
+}
+
+function PlanCard({ plan }: { plan: PlanUsage }) {
+  const limit = (used: number, max: number | null, unit?: string) =>
+    max === null ? `${formatNumber(used, unit)} · sin límite` : `${formatNumber(used, unit)} de ${formatNumber(max, unit)}`
+  return (
+    <Card className="xl:col-span-3">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          Plan <Badge variant="secondary">{plan.plan_name}</Badge>
+        </CardTitle>
+        <CardDescription>Uso de la organización frente a los límites de su plan. Para cambiar de plan contacta a AgroGestión 360.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <Row label="Proyectos vigentes">{limit(plan.projects, plan.max_projects)}</Row>
+          <Row label="Usuarios">
+            {limit(plan.users + plan.pending_invitations, plan.max_users)}
+          </Row>
+          <Row label="Almacenamiento">{limit(Math.round((plan.storage_bytes / 1048576) * 10) / 10, plan.max_storage_mb, "MB")}</Row>
+          <Row label="Funciones">{plan.features.map((f) => FEATURE_LABELS[f] ?? f).join(", ") || "—"}</Row>
+        </dl>
+      </CardContent>
+    </Card>
   )
 }
 

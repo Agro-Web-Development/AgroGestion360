@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { Database } from "@/types/database"
 import { env } from "@/lib/env"
 
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth"]
+const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/auth", "/offline"]
 
 export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -37,6 +37,14 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const isAuthenticated = Boolean(data?.claims?.sub)
   const { pathname } = request.nextUrl
+
+  if (!isAuthenticated && pathname.startsWith("/api/")) {
+    // La API responde en JSON: el dispositivo distingue una sesión vencida de una falla de red.
+    return NextResponse.json(
+      { error: "Tu sesión expiró. Inicia sesión de nuevo." },
+      { status: 401, headers: { "Cache-Control": "private, no-store" } }
+    )
+  }
 
   if (!isAuthenticated && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone()

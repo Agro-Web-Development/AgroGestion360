@@ -53,3 +53,25 @@ export async function getRecentActivity(limit = 8) {
     .limit(limit)
   return data ?? []
 }
+
+export type PlanUsage = {
+  plan_code: string
+  plan_name: string
+  features: string[]
+  max_projects: number | null
+  max_users: number | null
+  max_storage_mb: number | null
+  projects: number
+  users: number
+  pending_invitations: number
+  storage_bytes: number
+}
+
+/** Plan de la organización y su uso frente a los límites (sin cobros; ver docs/saas-suscripciones.md). */
+export async function getPlanUsage(): Promise<PlanUsage> {
+  const ctx = await getOrgContext()
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("organization_usage", { p_org: ctx.organization.id })
+  if (error) throw new Error("No fue posible cargar el plan de la organización.")
+  return data as unknown as PlanUsage
+}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 
 import { failure, success, validationFailure, type ActionResult } from "@/lib/actions"
 import { env } from "@/lib/env"
+import { safeRedirectPath } from "@/lib/safe-redirect"
 import { createClient } from "@/lib/supabase/server"
 import {
   forgotPasswordSchema,
@@ -16,10 +17,6 @@ import {
   type ResetPasswordInput,
 } from "./schemas"
 
-/** Solo permite redirecciones internas para evitar open redirects. */
-function safeNext(next: string | null | undefined): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard"
-}
 
 export async function signIn(input: LoginInput, next?: string): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input)
@@ -33,7 +30,7 @@ export async function signIn(input: LoginInput, next?: string): Promise<ActionRe
     }
     return failure("Correo o contraseña incorrectos.")
   }
-  redirect(safeNext(next))
+  redirect(safeRedirectPath(next))
 }
 
 export async function signUp(input: RegisterInput): Promise<ActionResult<{ needsConfirmation: boolean }>> {
@@ -97,7 +94,7 @@ export async function updatePassword(
     }
     return failure("No fue posible actualizar la contraseña.")
   }
-  if (redirectTo) redirect(safeNext(redirectTo))
+  if (redirectTo) redirect(safeRedirectPath(redirectTo))
   return success(undefined, "Contraseña actualizada.")
 }
 

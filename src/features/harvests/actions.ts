@@ -3,22 +3,16 @@
 import { refresh } from "next/cache"
 import { z } from "zod"
 
-import { dbErrorMessage, failure, isDuplicateId, success, validationFailure, type ActionResult } from "@/lib/actions"
+import { dbErrorMessage, failure, success, validationFailure, type ActionResult } from "@/lib/actions"
 import { can } from "@/lib/auth/roles"
 import { getOrgContext } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
-import type { TablesInsert } from "@/types/database"
+import { harvestFailure } from "./errors"
+import { createHarvest } from "./mutations"
 import { adjustmentSchema, harvestSchema, needsUnitWeight, type AdjustmentInput, type HarvestInput } from "./schemas"
 
 const idSchema = z.uuid()
 const reasonSchema = z.string().trim().min(5).max(500)
-
-function harvestFailure(error: Parameters<typeof dbErrorMessage>[0]): ActionResult<never> {
-  if (error.code === "23503") return failure("La parcela no está asignada al proyecto.", { plotId: ["Parcela no válida"] })
-  if (error.code === "22023" && error.message.includes("fecha")) return failure(error.message, { date: [error.message] })
-  if (error.code === "22023" && error.message.includes("cantidad")) return failure(error.message, { quantity: [error.message] })
-  return failure(dbErrorMessage(error))
-}
 
 /**
  * Alta (id del cliente, idempotente) o corrección de un corte. El folio del
@@ -60,15 +54,8 @@ export async function saveHarvest(input: HarvestInput, isUpdate = false): Promis
     return success(undefined, "Corte actualizado.")
   }
 
-  // lot_code y cut_number (si se omite) los asigna un trigger.
-  const { error } = await supabase.from("harvests").insert({
-    ...values,
-    id: v.id,
-    organization_id: ctx.organization.id,
-    project_id: v.projectId,
-    cut_number: v.cutNumber,
-  } as TablesInsert<"harvests">)
-  if (error && !isDuplicateId(error)) return harvestFailure(error)
+  const error = await createHarvest(supabase, ctx.organization.id, v)
+  if (error) return harvestFailure(error)
 
   refresh()
   return success(undefined, "Corte registrado. Se generó su lote de producción.")

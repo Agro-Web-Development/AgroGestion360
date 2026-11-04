@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { formatDateTime } from "@/lib/format"
 import { newId } from "@/lib/ids"
+import { compressImage } from "@/lib/image"
 import { createClient } from "@/lib/supabase/client"
 import { deleteAttachment, listAttachments, registerAttachments, type AttachmentView } from "../actions"
 import {
@@ -48,7 +49,9 @@ export async function uploadEvidence(
   if (files.length === 0) return true
   const supabase = createClient()
   const uploaded: { path: string; name: string; type: AttachmentMime; size: number }[] = []
-  for (const file of files) {
+  for (const original of files) {
+    // Las fotografías se reducen antes de subir (ver lib/image.ts); los PDF se suben tal cual.
+    const file = await compressImage(original)
     const path = attachmentPath(organizationId, entity, entityId, newId(), file.name)
     const { error } = await supabase.storage.from("evidencias").upload(path, file, { contentType: file.type, upsert: false })
     if (error) {
