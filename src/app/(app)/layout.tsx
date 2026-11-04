@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getNotifications } from "@/features/notifications/queries"
 import { ROLE_LABELS } from "@/lib/auth/roles"
 import { getOrgContext } from "@/lib/auth/session"
 
@@ -27,7 +28,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Suspense>
         }
       />
-      <SidebarInset>
+      {/* min-w-0: una tabla ancha se desplaza dentro de su tarjeta y no ensancha la página. */}
+      <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-card/90 px-3 backdrop-blur supports-backdrop-filter:bg-card/75 sm:h-16 sm:px-6">
           <SidebarTrigger className="-ml-1 size-9" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
@@ -52,7 +54,7 @@ async function OrganizationSlot() {
 }
 
 async function TopbarSlot() {
-  const ctx = await getOrgContext()
+  const [ctx, notifications] = await Promise.all([getOrgContext(), getNotifications()])
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <span className="min-w-0 truncate text-sm font-semibold">{ctx.organization.name}</span>
@@ -68,7 +70,7 @@ async function TopbarSlot() {
       <div className="ml-auto flex items-center gap-1">
         <ConnectionStatus userId={ctx.user.id} />
         <InstallPrompt />
-        <NotificationsMenu notifications={[]} />
+        <NotificationsMenu notifications={notifications} />
         <UserMenu userId={ctx.user.id} name={ctx.user.fullName} email={ctx.user.email} roleLabel={ROLE_LABELS[ctx.role]} />
       </div>
     </div>

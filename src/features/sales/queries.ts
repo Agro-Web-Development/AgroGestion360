@@ -3,6 +3,7 @@ import "server-only"
 import { notFound } from "next/navigation"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
 import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { DeliveryState, PaymentState } from "./schemas"
@@ -147,7 +148,7 @@ export async function getActiveCustomers() {
 export type PaymentFilters = SaleFilters & { kind?: "pago" | "anticipo"; includeCancelled?: boolean; saleIds?: string[] }
 
 /** Pagos y anticipos (los cancelados se conservan). */
-export async function getPayments(filters: PaymentFilters = {}, limit = 300) {
+export async function getPayments(filters: PaymentFilters = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
@@ -157,23 +158,23 @@ export async function getPayments(filters: PaymentFilters = {}, limit = 300) {
        sale:sales!inner(id, code, status, customer_id, customer:customers!inner(id, name))`
     )
     .eq("organization_id", ctx.organization.id)
-    .order("payment_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit)
   if (filters.from) query = query.gte("payment_date", filters.from)
   if (filters.to) query = query.lte("payment_date", filters.to)
   if (filters.customerId) query = query.eq("sale.customer_id", filters.customerId)
   if (filters.kind) query = query.eq("kind", filters.kind)
   if (filters.saleIds) query = query.in("sale_id", filters.saleIds)
   if (!filters.includeCancelled) query = query.eq("status", "aplicado")
-  const { data, error } = await query
+  const { data, error } = await fetchRows(
+    query.order("payment_date", { ascending: false }).order("created_at", { ascending: false }).order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar los pagos.")
   return data
 }
 
 /** Anticipos vigentes con importe pendiente de aplicar. */
 export async function getPendingAdvances() {
-  const rows = await getPayments({ kind: "anticipo" }, 500)
+  const rows = await getPayments({ kind: "anticipo" })
   return rows
     .map((p) => ({ ...p, pending: Math.round((n(p.amount) - n(p.applied_amount)) * 100) / 100 }))
     .filter((p) => p.pending > 0)

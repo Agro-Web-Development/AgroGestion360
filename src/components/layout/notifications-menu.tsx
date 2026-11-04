@@ -1,21 +1,23 @@
 "use client"
 
 import { Bell, BellOff } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export type AppNotification = { id: string; title: string; description?: string }
+export type AppNotification = { id: string; title: string; description?: string; href?: string }
 
 /**
- * Centro de notificaciones. En fases posteriores recibirá alertas de stock
- * mínimo, caducidades y pagos vencidos; por ahora muestra las que se le pasen.
+ * Centro de notificaciones: alertas vigentes calculadas en el servidor
+ * (features/notifications/queries.ts). Cada una lleva a la pantalla donde se atiende.
  */
 export function NotificationsMenu({ notifications }: { notifications: AppNotification[] }) {
   const count = notifications.length
@@ -41,14 +43,25 @@ export function NotificationsMenu({ notifications }: { notifications: AppNotific
             No tienes notificaciones pendientes.
           </div>
         ) : (
-          <ul className="max-h-80 overflow-y-auto">
-            {notifications.map((n) => (
-              <li key={n.id} className="rounded-sm px-2 py-2 text-sm hover:bg-accent">
-                <p className="font-medium">{n.title}</p>
-                {n.description && <p className="text-xs text-muted-foreground">{n.description}</p>}
-              </li>
-            ))}
-          </ul>
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.map((n) => {
+              const body = (
+                <div className="min-w-0">
+                  <p className="font-medium">{n.title}</p>
+                  {n.description && <p className="truncate text-xs text-muted-foreground">{n.description}</p>}
+                </div>
+              )
+              return n.href ? (
+                <DropdownMenuItem key={n.id} asChild>
+                  <Link href={n.href}>{body}</Link>
+                </DropdownMenuItem>
+              ) : (
+                <div key={n.id} className="px-2 py-1.5 text-sm">
+                  {body}
+                </div>
+              )
+            })}
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

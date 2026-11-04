@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { ReasonDialog } from "@/components/shared/reason-dialog"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { matchesQuery, SearchInput } from "@/components/shared/search-input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -53,6 +54,7 @@ export function ExpensesTable({
       matchesQuery(query, e.description, e.supplier?.name, e.invoice_ref, ...e.allocations.map((a) => a.project.code))
   )
   const active = rows.filter((e) => e.status === "registrado")
+  const { pageRows, pagination } = usePagination(rows)
 
   return (
     <div className="space-y-3">
@@ -93,7 +95,7 @@ export function ExpensesTable({
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((e) => {
+            {pageRows.map((e) => {
               const cancelled = e.status === "cancelado"
               const locked = e.allocations.some((a) => isClosed(a.project.status))
               return (
@@ -207,6 +209,7 @@ export function ExpensesTable({
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

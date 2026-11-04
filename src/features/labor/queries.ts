@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
 import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 
@@ -33,7 +34,7 @@ export async function getEmployeeOptions() {
 
 export type DateRange = { from?: string; to?: string; projectId?: string }
 
-export async function getLaborRecords(range: DateRange = {}, limit = 500) {
+export async function getLaborRecords(range: DateRange = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
@@ -55,7 +56,7 @@ export async function getLaborRecords(range: DateRange = {}, limit = 500) {
   return data
 }
 
-export async function getAttendance(range: DateRange = {}, limit = 500) {
+export async function getAttendance(range: DateRange = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase

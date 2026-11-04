@@ -90,6 +90,7 @@ cobranza, presupuesto y resultado por proyecto), `v_budget_comparison`, `v_sale_
 | `20261104050000_financial_enums.sql`      | Tipo de gasto `mantenimiento`.                                                             |
 | `20261104050100_financial.sql`            | Presupuestos por versión, gastos compartidos, flujo de efectivo, alertas.                   |
 | `20261105060000_platform.sql`             | **Fase 6:** observaciones de campo, `offline_submissions`, planes y límites, política de Storage corregida, índices de llaves foráneas. |
+| `20261106070000_auditoria.sql`            | **Auditoría:** eliminar una organización con historial (reglas omitidas en la cascada, llaves `NO ACTION DEFERRABLE`, llave `payments → organizations`). |
 
 Reglas para nuevas migraciones:
 
@@ -133,5 +134,5 @@ almacenes), de modo que eliminar un registro sin uso no recorra tablas completas
 
 ## Pruebas
 
-`npm run test:db` ejecuta 7 archivos pgTAP (436 pruebas): RLS por rol y organización, reglas de superficie, inventario,
+`npm run test:db` ejecuta 8 archivos pgTAP (450 pruebas): RLS por rol y organización, reglas de superficie, inventario,
 costos sin duplicidad, ventas y existencias concurrentes, presupuestos, sincronización sin conexión y límites por plan.

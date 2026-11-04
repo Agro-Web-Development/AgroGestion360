@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { ReasonDialog } from "@/components/shared/reason-dialog"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { matchesQuery, SearchInput } from "@/components/shared/search-input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,6 +44,7 @@ export function MovementsTable({ movements, canWrite }: { movements: Movement[];
       ),
     [movements, type, query]
   )
+  const { pageRows, pagination } = usePagination(filtered)
 
   return (
     <div className="space-y-3">
@@ -88,7 +90,7 @@ export function MovementsTable({ movements, canWrite }: { movements: Movement[];
                 </TableCell>
               </TableRow>
             )}
-            {filtered.map((m) => {
+            {pageRows.map((m) => {
               const transfer = m.movement_type === "transferencia"
               const inflow = isInflow(m.movement_type)
               const reversible =
@@ -162,6 +164,7 @@ export function MovementsTable({ movements, canWrite }: { movements: Movement[];
           </TableBody>
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

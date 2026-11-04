@@ -1184,6 +1184,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "payments_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "payments_organization_id_sale_id_fkey"
       columns: ["organization_id","sale_id"]
 isOneToOne: false
@@ -1973,6 +1979,9 @@ isOneToOne: false
                            },
 "next_folio":
 { Args: { "p_org": string,"p_prefix": string,"p_scope": string }; Returns: string
+                           },
+"org_deleted":
+{ Args: { "p_org": string }; Returns: boolean
                            },
 "organization_usage":
 { Args: { "p_org": string }; Returns: Json

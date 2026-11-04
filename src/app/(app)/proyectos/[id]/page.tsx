@@ -60,6 +60,10 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
     : [null, [], [], undefined]
   const saleIds = [...new Set(trace.map((t) => t.saleId))]
   const payments = saleIds.length > 0 ? await getPayments({ saleIds, includeCancelled: true }) : []
+  // Anticipos recibidos que aún no se aplican al saldo: no cuentan como cobrado.
+  const pendingAdvances = payments
+    .filter((p) => p.kind === "anticipo" && p.status === "aplicado")
+    .reduce((t, p) => t + Number(p.amount) - Number(p.applied_amount), 0)
   const produced = lots.reduce((t, l) => t + Number(l.quantity_kg), 0)
   const soldKg = lots.reduce((t, l) => t + Number(l.sold_kg), 0)
   const shrinkage = lots.reduce((t, l) => t + Number(l.adjusted_kg), 0)
@@ -230,7 +234,7 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
                     <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.salesAmount)}</dd>
                   </div>
                   <div className="rounded-lg border px-3 py-2">
-                    <dt className="text-xs text-muted-foreground">Cobrado (pagos recibidos)</dt>
+                    <dt className="text-xs text-muted-foreground">Cobrado (pagos y anticipos aplicados)</dt>
                     <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.collectedAmount)}</dd>
                   </div>
                   <div className="rounded-lg border px-3 py-2">
@@ -238,6 +242,13 @@ export default async function ProjectPage({ params }: PageProps<"/proyectos/[id]
                     <dd className="text-lg font-semibold tabular-nums">{formatMoney(costs.receivableAmount)}</dd>
                   </div>
                 </dl>
+                {pendingAdvances > 0.005 && (
+                  <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                    Anticipos recibidos sin aplicar:{" "}
+                    <span className="font-medium text-foreground tabular-nums">{formatMoney(pendingAdvances)}</span>. Se aplican al
+                    saldo desde cada venta; mientras tanto no cuentan como cobrado ni reducen el saldo por cobrar.
+                  </p>
+                )}
                 {trace.length === 0 ? (
                   <EmptyState icon={ShoppingCart} title="Sin ventas" description="Las ventas confirmadas de sus lotes aparecerán aquí." />
                 ) : (

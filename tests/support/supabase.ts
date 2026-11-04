@@ -50,8 +50,14 @@ export async function signIn(email: string): Promise<Client> {
 /** Elimina las organizaciones (cascada) y los usuarios creados por la prueba. */
 export async function cleanup(orgIds: string[], userIds: string[]) {
   const admin = adminClient()
-  if (orgIds.length) await admin.from("organizations").delete().in("id", orgIds)
-  for (const id of userIds) await admin.auth.admin.deleteUser(id)
+  if (orgIds.length) {
+    const { error } = await admin.from("organizations").delete().in("id", orgIds)
+    if (error) throw new Error(`No se eliminaron las organizaciones de prueba: ${error.message}`)
+  }
+  for (const id of userIds) {
+    const { error } = await admin.auth.admin.deleteUser(id)
+    if (error) throw new Error(`No se eliminó el usuario de prueba ${id}: ${error.message}`)
+  }
 }
 
 /** Fecha AAAA-MM-DD en la zona de México (la misma regla que la BD). */

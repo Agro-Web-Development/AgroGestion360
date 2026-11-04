@@ -21,6 +21,7 @@ import {
 } from "@/features/reports/aggregate"
 import { ReportTable } from "@/features/reports/components/report-table"
 import { getConsumptionMovements, getCostEntries, REPORT_LIMIT } from "@/features/reports/queries"
+import { getOrgContext } from "@/lib/auth/session"
 import { formatDate, todayISO } from "@/lib/format"
 import { dateParam, idParam, param } from "@/lib/search-params"
 
@@ -54,6 +55,9 @@ function Report({ title, description, children }: { title: string; description: 
 
 export default async function ReportsPage({ searchParams }: PageProps<"/reportes">) {
   const sp = await searchParams
+  // La fecha se lee después de la sesión (cookies): con Cache Components, leer
+  // el reloj antes de un dato de la solicitud interrumpe el prerenderizado.
+  await getOrgContext()
   const today = todayISO()
   const filters = {
     from: dateParam(sp.desde) ?? `${today.slice(0, 4)}-01-01`,

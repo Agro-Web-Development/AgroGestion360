@@ -8,6 +8,7 @@ import type { SelectOption } from "@/components/forms/form-select"
 import { CatalogRowActions } from "@/components/shared/catalog-row-actions"
 import { ReasonDialog } from "@/components/shared/reason-dialog"
 import { matchesQuery, SearchInput } from "@/components/shared/search-input"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -88,7 +89,8 @@ function useLogFilter<T extends Row>(rows: T[], text: (r: T) => (string | null |
       </label>
     </div>
   )
-  return { filtered, controls }
+  const { pageRows, pagination } = usePagination(filtered)
+  return { filtered, pageRows, pagination, controls }
 }
 
 function ProjectCell({ project, plot }: { project: Row["project"]; plot?: string | null }) {
@@ -168,7 +170,7 @@ function Empty({ cols, text }: { cols: number; text: string }) {
 
 // -----------------------------------------------------------------------------
 export function IrrigationTable({ logs, ...shared }: Shared & { logs: IrrigationLog[] }) {
-  const { filtered, controls } = useLogFilter(logs, (r) => [r.project.code, r.assignment.plot.name, r.responsible?.full_name, r.notes])
+  const { filtered, pageRows, pagination, controls } = useLogFilter(logs, (r) => [r.project.code, r.assignment.plot.name, r.responsible?.full_name, r.notes])
   const active = filtered.filter((r) => r.status !== "cancelado")
   const water = active.reduce((s, r) => s + Number(r.water_m3 ?? 0), 0)
   const minutes = active.reduce((s, r) => s + (r.duration_minutes ?? 0), 0)
@@ -193,7 +195,7 @@ export function IrrigationTable({ logs, ...shared }: Shared & { logs: Irrigation
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <Empty cols={7} text="Sin riegos en el periodo." />}
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <TableRow key={r.id} className={r.status === "cancelado" ? "opacity-60" : undefined}>
                 <TableCell className="whitespace-nowrap">
                   {formatDate(r.log_date)}
@@ -266,6 +268,7 @@ export function IrrigationTable({ logs, ...shared }: Shared & { logs: Irrigation
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }
@@ -276,7 +279,7 @@ export function ApplicationsTable({
   machines,
   ...shared
 }: Shared & { applications: Application[]; machines: SelectOption[] }) {
-  const { filtered, controls } = useLogFilter(applications, (r) => [
+  const { filtered, pageRows, pagination, controls } = useLogFilter(applications, (r) => [
     r.project.code,
     r.assignment.plot.name,
     r.product.name,
@@ -305,7 +308,7 @@ export function ApplicationsTable({
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <Empty cols={7} text="Sin aplicaciones en el periodo." />}
-            {filtered.map((r) => {
+            {pageRows.map((r) => {
               const rate = appliedRate(r.quantity, r.treated_area_ha)
               return (
                 <TableRow key={r.id} className={r.status === "cancelado" ? "opacity-60" : undefined}>
@@ -380,6 +383,7 @@ export function ApplicationsTable({
           </TableBody>
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }
@@ -390,7 +394,7 @@ export function ActivitiesTable({
   activityTypes,
   ...shared
 }: Shared & { activities: FieldActivity[]; activityTypes: SelectOption[] }) {
-  const { filtered, controls } = useLogFilter(activities, (r) => [
+  const { filtered, pageRows, pagination, controls } = useLogFilter(activities, (r) => [
     r.activity_type.name,
     r.description,
     r.project.code,
@@ -418,7 +422,7 @@ export function ActivitiesTable({
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <Empty cols={6} text="Sin actividades en el periodo." />}
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <TableRow key={r.id} className={r.status === "cancelado" ? "opacity-60" : undefined}>
                 <TableCell className="whitespace-nowrap">
                   {formatDate(r.activity_date)}
@@ -487,6 +491,7 @@ export function ActivitiesTable({
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }
@@ -500,7 +505,7 @@ const SEVERITY_STYLES: Record<ObservationSeverity, string> = {
 
 /** Observaciones de campo (se capturan en /campo, con o sin conexión). */
 export function ObservationsTable({ observations, ...shared }: Shared & { observations: FieldObservation[] }) {
-  const { filtered, controls } = useLogFilter(observations, (r) => [
+  const { filtered, pageRows, pagination, controls } = useLogFilter(observations, (r) => [
     r.title,
     r.description,
     OBSERVATION_CATEGORY_LABELS[r.category as ObservationCategory],
@@ -526,7 +531,7 @@ export function ObservationsTable({ observations, ...shared }: Shared & { observ
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <Empty cols={5} text="Sin observaciones en el periodo." />}
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <TableRow key={r.id} className={r.status === "cancelado" ? "opacity-60" : undefined}>
                 <TableCell className="whitespace-nowrap">
                   {formatDate(r.observation_date)}
@@ -581,6 +586,7 @@ export function ObservationsTable({ observations, ...shared }: Shared & { observ
           </TableBody>
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

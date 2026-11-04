@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
 import { fromCents, toCents } from "@/lib/money"
 import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
@@ -144,7 +145,7 @@ export async function getCostEntries(filters: CostEntryFilters, limit = 20000) {
 // -----------------------------------------------------------------------------
 export type ExpenseFilters = { from?: string; to?: string; projectId?: string }
 
-export async function getExpenses(filters: ExpenseFilters = {}, limit = 500) {
+export async function getExpenses(filters: ExpenseFilters = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   const projectJoin = filters.projectId ? "project_expenses!inner" : "project_expenses"

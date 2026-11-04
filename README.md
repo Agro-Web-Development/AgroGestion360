@@ -65,6 +65,11 @@ Contraseña para todos: `Demo12345!`
 Los datos demo solo se cargan con `supabase/seed.sql` en el entorno local; nunca se
 aplican en producción.
 
+**Escenario integral «Producción de jitomate»** (5 ha, presupuesto de $250,000, de la compra de insumos a la cobranza):
+`npm run demo:jitomate` lo carga en una organización demo aparte, «Agropecuaria Los Campos · Escenario jitomate», con
+usuarios `jitomate.{propietario,agronomo,campo,almacen,finanzas,consulta}@demo.agrogestion360.mx` (misma contraseña).
+Cifras esperadas y resultados en [docs/auditoria-integral.md](docs/auditoria-integral.md).
+
 ## Scripts
 
 | Script                     | Descripción                                                        |
@@ -79,6 +84,7 @@ aplican en producción.
 | `npm run test:e2e`         | Extremo a extremo en navegador (Playwright; compila la app)         |
 | `npm run db:reset`         | Recrea la BD local: migraciones + datos demo                       |
 | `npm run db:types`         | Regenera `src/types/database.ts` desde el esquema local            |
+| `npm run demo:jitomate`    | Carga el escenario integral de demostración en Supabase local      |
 
 Antes de `test:e2e` la primera vez: `npx playwright install --with-deps chromium`. `E2E_SKIP_BUILD=1` reutiliza la última
 compilación. La integración continua (`.github/workflows/ci.yml`) ejecuta todo con Supabase local.

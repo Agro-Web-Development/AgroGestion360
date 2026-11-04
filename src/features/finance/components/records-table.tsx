@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { ConfirmAction } from "@/components/shared/confirm-action"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -55,6 +56,7 @@ export function RecordsTable({
   }, [rows])
   const filtered = projectId === ALL ? rows : rows.filter((r) => r.project.id === projectId)
   const total = filtered.reduce((s, r) => s + Number(r.value), 0)
+  const { pageRows, pagination } = usePagination(filtered)
   const format = (v: number | string | null) => (valueUnit ? formatNumber(v, valueUnit) : formatMoney(v))
 
   return (
@@ -98,7 +100,7 @@ export function RecordsTable({
                 </TableCell>
               </TableRow>
             )}
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="whitespace-nowrap">{formatDate(r.date)}</TableCell>
                 <TableCell>
@@ -151,6 +153,7 @@ export function RecordsTable({
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import type { SelectOption } from "@/components/forms/form-select"
 import { ConfirmAction } from "@/components/shared/confirm-action"
 import { ReasonDialog } from "@/components/shared/reason-dialog"
 import { matchesQuery, SearchInput } from "@/components/shared/search-input"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -74,6 +75,7 @@ export function HarvestsTable({
   const filtered = rows.filter((h) =>
     matchesQuery(query, h.lot_code, h.project.code, h.project.name, product(h), h.assignment.plot.name, h.classification)
   )
+  const { pageRows, pagination } = usePagination(filtered)
 
   return (
     <div className="space-y-3">
@@ -94,7 +96,7 @@ export function HarvestsTable({
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <EmptyRow colSpan={6} text="Sin cortes en el periodo." />}
-            {filtered.map((h) => {
+            {pageRows.map((h) => {
               const closed = isClosed(h.project.status)
               const moved = n(h.sold_kg) > 0 || n(h.adjusted_kg) !== 0
               const editProjects = projects.some((p) => p.id === h.project.id)
@@ -185,6 +187,7 @@ export function HarvestsTable({
           </TableBody>
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }
@@ -205,6 +208,7 @@ export function LotsTable({ rows, canAdjust }: { rows: Harvest[]; canAdjust: boo
     [rows, query, onlyAvailable]
   )
   const total = (f: (h: Harvest) => number) => filtered.reduce((t, h) => t + f(h), 0)
+  const { pageRows, pagination } = usePagination(filtered)
 
   return (
     <div className="space-y-3">
@@ -235,7 +239,7 @@ export function LotsTable({ rows, canAdjust }: { rows: Harvest[]; canAdjust: boo
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && <EmptyRow colSpan={8} text="Sin lotes que mostrar." />}
-            {filtered.map((h) => (
+            {pageRows.map((h) => (
               <TableRow key={h.id}>
                 <TableCell>
                   <Link href={`/produccion/lotes/${h.id}`} className="font-medium hover:underline">
@@ -300,6 +304,7 @@ export function LotsTable({ rows, canAdjust }: { rows: Harvest[]; canAdjust: boo
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

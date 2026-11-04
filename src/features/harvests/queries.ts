@@ -4,6 +4,8 @@ import { notFound } from "next/navigation"
 
 import type { DateRange } from "@/features/labor/queries"
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { LotFigures } from "./aggregate"
 
@@ -16,20 +18,17 @@ const LOT_FIELDS = `id, lot_code, cut_number, harvest_date, quality, classificat
   assignment:project_plots!inner(assigned_area_ha, plot:plots!inner(id, name, farm:farms!inner(name)))`
 
 /** Cortes (lotes) del periodo, del más reciente al más antiguo. */
-export async function getHarvests(range: DateRange = {}, limit = 500) {
+export async function getHarvests(range: DateRange = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
-  let query = supabase
-    .from("harvests")
-    .select(LOT_FIELDS)
-    .eq("organization_id", ctx.organization.id)
-    .order("harvest_date", { ascending: false })
-    .order("lot_code", { ascending: false })
-    .limit(limit)
+  let query = supabase.from("harvests").select(LOT_FIELDS).eq("organization_id", ctx.organization.id)
   if (range.from) query = query.gte("harvest_date", range.from)
   if (range.to) query = query.lte("harvest_date", range.to)
   if (range.projectId) query = query.eq("project_id", range.projectId)
-  const { data, error } = await query
+  const { data, error } = await fetchRows(
+    query.order("harvest_date", { ascending: false }).order("lot_code", { ascending: false }).order("id"),
+    limit
+  )
   if (error) throw new Error("No fue posible cargar los cortes.")
   return data
 }
@@ -57,7 +56,7 @@ export async function getLot(id: string) {
  * Movimientos de producto (en kg). El folio de la venta solo llega a los roles
  * con lectura financiera: para el resto la RLS deja la venta en null.
  */
-export async function getProductionMovements(range: DateRange & { harvestId?: string } = {}, limit = 300) {
+export async function getProductionMovements(range: DateRange & { harvestId?: string } = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
@@ -68,13 +67,11 @@ export async function getProductionMovements(range: DateRange & { harvestId?: st
        sale:sales(id, code)`
     )
     .eq("organization_id", ctx.organization.id)
-    .order("created_at", { ascending: false })
-    .limit(limit)
   if (range.from) query = query.gte("movement_date", range.from)
   if (range.to) query = query.lte("movement_date", range.to)
   if (range.projectId) query = query.eq("lot.project_id", range.projectId)
   if (range.harvestId) query = query.eq("harvest_id", range.harvestId)
-  const { data, error } = await query
+  const { data, error } = await fetchRows(query.order("created_at", { ascending: false }).order("id"), limit)
   if (error) throw new Error("No fue posible cargar los movimientos de producto.")
   const reversed = new Set(data.map((m) => m.reverses_id).filter(Boolean))
   return data.map((m) => ({ ...m, reversed: reversed.has(m.id) }))

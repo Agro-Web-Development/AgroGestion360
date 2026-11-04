@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { matchesQuery, SearchInput } from "@/components/shared/search-input"
+import { TablePagination, usePagination } from "@/components/shared/table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate, formatMoney, formatNumber } from "@/lib/format"
@@ -22,6 +23,7 @@ export function SalesTable({ sales, showCustomer = true }: { sales: SaleListItem
     [sales, query, status]
   )
   const active = filtered.filter((s) => isActiveSale(s.status))
+  const { pageRows, pagination } = usePagination(filtered)
 
   return (
     <div className="space-y-3">
@@ -62,7 +64,7 @@ export function SalesTable({ sales, showCustomer = true }: { sales: SaleListItem
                 </TableCell>
               </TableRow>
             )}
-            {filtered.map((s) => (
+            {pageRows.map((s) => (
               <TableRow key={s.id} className={s.status === "cancelada" ? "opacity-60" : undefined}>
                 <TableCell>
                   <Link href={`/ventas/${s.id}`} className="font-medium hover:underline">
@@ -122,6 +124,7 @@ export function SalesTable({ sales, showCustomer = true }: { sales: SaleListItem
           )}
         </Table>
       </div>
+      <TablePagination {...pagination} />
     </div>
   )
 }

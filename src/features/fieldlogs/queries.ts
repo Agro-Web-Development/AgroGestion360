@@ -1,13 +1,14 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
 import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { TimelineKind } from "./schemas"
 
 export type LogFilters = { from?: string; to?: string; projectId?: string }
 
-const LIMIT = 300
+const LIMIT = LIST_LIMIT
 
 export async function getIrrigationLogs(filters: LogFilters = {}, limit = LIMIT) {
   const ctx = await getOrgContext()

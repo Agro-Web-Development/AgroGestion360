@@ -1,6 +1,8 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
+import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 
 export async function getProducts() {
@@ -24,7 +26,7 @@ export async function getProducts() {
 
 export type MovementFilters = { from?: string; to?: string; warehouseId?: string; productId?: string }
 
-export async function getMovements(filters: MovementFilters = {}, limit = 300) {
+export async function getMovements(filters: MovementFilters = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
@@ -39,7 +41,7 @@ export async function getMovements(filters: MovementFilters = {}, limit = 300) {
   if (filters.warehouseId) {
     query = query.or(`warehouse_id.eq.${filters.warehouseId},to_warehouse_id.eq.${filters.warehouseId}`)
   }
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit)
+  const { data, error } = await fetchRows(query.order("created_at", { ascending: false }).order("id"), limit)
   if (error) throw new Error("No fue posible cargar los movimientos.")
 
   // Los movimientos que pertenecen a una aplicación o al combustible de un uso de

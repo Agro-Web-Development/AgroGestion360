@@ -16,7 +16,8 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > src/types/database.ts"
+    "db:types": "supabase gen types typescript --local > src/types/database.ts",
+    "demo:jitomate": "vitest run --config vitest.demo.config.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.1",

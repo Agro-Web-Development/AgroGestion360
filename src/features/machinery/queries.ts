@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getOrgContext } from "@/lib/auth/session"
+import { LIST_LIMIT } from "@/lib/list-limit"
 import { fetchRows } from "@/lib/supabase/rows"
 import { createClient } from "@/lib/supabase/server"
 import type { MaintenanceAlert } from "./schemas"
@@ -43,7 +44,7 @@ export async function getMachines() {
 
 export type UsageFilters = { from?: string; to?: string; projectId?: string }
 
-export async function getUsage(filters: UsageFilters = {}, limit = 300) {
+export async function getUsage(filters: UsageFilters = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
@@ -65,7 +66,7 @@ export async function getUsage(filters: UsageFilters = {}, limit = 300) {
   return data
 }
 
-export async function getMaintenance(filters: Omit<UsageFilters, "projectId"> = {}, limit = 300) {
+export async function getMaintenance(filters: Omit<UsageFilters, "projectId"> = {}, limit = LIST_LIMIT) {
   const ctx = await getOrgContext()
   const supabase = await createClient()
   let query = supabase
