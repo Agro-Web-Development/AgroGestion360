@@ -22,6 +22,12 @@ despliegue. Ver el [informe de la Fase 6](docs/informe-fase-6.md).
 | [docs/solucion-de-errores.md](docs/solucion-de-errores.md) | Manual de solución de errores. |
 | [docs/decisiones.md](docs/decisiones.md) | Registro de decisiones y supuestos. |
 | [docs/informe-fase-6.md](docs/informe-fase-6.md) | Informe final: funcionalidades, pruebas, errores, riesgos y recomendaciones. |
+| [docs/README.md](docs/README.md) | **Índice de la documentación.** |
+| [docs/manual/manual_usuario_agrogestion_360.md](docs/manual/manual_usuario_agrogestion_360.md) | Manual de usuario (17 capítulos, con capturas reales). |
+| [docs/pruebas/guia_pruebas_funcionales.md](docs/pruebas/guia_pruebas_funcionales.md) | Guía de pruebas funcionales (78 casos por módulo, con resultado y estado). |
+| [docs/pruebas/escenario_prueba_integral.md](docs/pruebas/escenario_prueba_integral.md) | Escenario integral: proyecto de jitomate de 5 ha, del rancho a la cobranza, con cifras de comprobación. |
+| [docs/pruebas/matriz_resultados_pruebas.md](docs/pruebas/matriz_resultados_pruebas.md) | Matriz de resultados de pruebas manuales y automatizadas. |
+| [docs/analisis/inventario_funcionalidades.md](docs/analisis/inventario_funcionalidades.md) | Funcionalidades implementadas, parciales, pendientes y no verificadas. |
 
 ## Stack
 
