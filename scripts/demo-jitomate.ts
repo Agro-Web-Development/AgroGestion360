@@ -7,6 +7,9 @@
  *   npm run demo:jitomate
  *
  * Usuarios (contraseña Demo12345!): jitomate.{propietario,agronomo,campo,almacen,finanzas,consulta}@demo.agrogestion360.mx
+ *
+ * En el proyecto de demostración para clientes: npm run demo:jitomate:remoto (lee .env.demo; DEMO_PASSWORD
+ * reemplaza la contraseña común).
  */
 import { expect, it } from "vitest"
 
@@ -14,7 +17,7 @@ import { cargarEscenario, cobrarEscenario, ESPERADO } from "../tests/support/esc
 import { adminClient, anonClient } from "../tests/support/supabase"
 
 const ORG_NAME = "Agropecuaria Los Campos · Escenario jitomate"
-const PASSWORD = "Demo12345!"
+const PASSWORD = process.env.DEMO_PASSWORD || "Demo12345!"
 const ROLES = [
   ["propietario", "propietario", "Laura Campos Méndez"],
   ["agronomo", "agronomo", "Ing. Rafael Ortiz"],

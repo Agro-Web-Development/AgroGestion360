@@ -6,6 +6,7 @@
 | -------------- | ----------------------------------- | ---------------------------------------------- | ------------------------------ |
 | Desarrollo     | `npm run dev` (localhost:3000)      | Supabase local en Docker (`npm run db:start`)   | Demostración (`seed.sql`)       |
 | Vista previa   | Vercel *Preview* (cada rama / PR)   | Proyecto Supabase **de pruebas** (`agrogestion-staging`) | Ficticios                |
+| Demostración   | Vercel, proyecto aparte              | Proyecto Supabase **de demostración** (`agrogestion-demo`) | Escenario jitomate (ver abajo) |
 | Producción     | Vercel *Production* (rama `main`)   | Proyecto Supabase **de producción** (`agrogestion-prod`) | Reales; `seed.sql` nunca se aplica |
 
 Las vistas previas **nunca** apuntan a la base de producción.
@@ -60,6 +61,40 @@ el de pruebas). `.env.local` está en `.gitignore`; el repositorio solo contiene
 3. Actualiza `NEXT_PUBLIC_SITE_URL` y la configuración de URLs de Supabase Auth al dominio definitivo y vuelve a desplegar.
 
 La PWA requiere HTTPS: en el dominio de Vercel o el propio ya se puede instalar.
+
+## Entorno de demostración para clientes
+
+Un proyecto Vercel y un proyecto Supabase **propios** (`agrogestion-demo`), separados de pruebas y de producción, para
+que un cliente pruebe el sistema por su cuenta con datos ficticios.
+
+1. Crea el proyecto Supabase `agrogestion-demo` (plan Free basta) y aplica las migraciones como en producción
+   (`supabase link` + `supabase db push`).
+2. *Authentication → URL Configuration:* Site URL y Redirect URLs con la URL de Vercel de la demo.
+3. *Authentication → Providers → Email:* desactiva *Confirm email* (el SMTP integrado de Supabase solo envía unos pocos
+   correos por hora) o configura un SMTP propio si la demo debe incluir invitaciones y recuperación de contraseña.
+4. Crea el proyecto Vercel de la demo con las variables de la tabla anterior apuntando a `agrogestion-demo`.
+5. Carga el escenario jitomate con un archivo `.env.demo` (ignorado por Git, igual que `.env.local`):
+
+   ```bash
+   # .env.demo
+   NEXT_PUBLIC_SUPABASE_URL=https://<ref-demo>.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+   SUPABASE_SECRET_KEY=sb_secret_…
+   DEMO_REMOTE_REF=<ref-demo>       # obligatorio: debe coincidir con la URL
+   DEMO_PASSWORD=<contraseña-demo>  # opcional; por omisión Demo12345!
+   ```
+
+   ```bash
+   npm run demo:jitomate:remoto
+   ```
+
+   Crea la organización «Agropecuaria Los Campos · Escenario jitomate» (marcada como demostración) con un usuario por
+   rol `jitomate.{propietario,agronomo,campo,almacen,finanzas,consulta}@demo.agrogestion360.mx`. Volver a ejecutarlo
+   reinicia el escenario. El cliente puede además registrarse en `/registro` y crear su propia organización vacía.
+
+La salvaguarda de `tests/support/supabase.ts` solo admite una URL remota en este modo y solo si coincide con
+`DEMO_REMOTE_REF`; las pruebas de integración siguen exigiendo Supabase local. **Nunca** pongas en `.env.demo` el
+proyecto de producción.
 
 ## Despliegues posteriores
 
